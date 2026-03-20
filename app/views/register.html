@@ -10,12 +10,58 @@
     <div id="topbar"></div>
 
     <main>
-        <section class="hero">
+        <section class="hero auth-hero">
             <div class="container">
-                <h1>Inscription</h1>
+                <div class="auth-layout">
+                    <div class="auth-intro">
+                        <p class="eyebrow">Nouveau compte</p>
+                        <h1>Inscription</h1>
+                        <p class="hero-text">Creez votre compte Secure Shop pour acceder a votre espace personnel.</p>
+                    </div>
 
-                <p>Placer un formulaire d'inscription ici</p>
+                    <section class="auth-card" aria-label="Formulaire d'inscription">
+                        <h2>Creer un compte</h2>
+                        <p class="auth-subtitle">Quelques informations suffisent pour demarrer.</p>
 
+                        <div class="message" id="register-message" role="status" aria-live="polite"></div>
+
+                        <form id="register-form" novalidate>
+                            <div class="form-group">
+                                <label for="username">Nom d'utilisateur</label>
+                                <input type="text" id="username" name="username" placeholder="Votre pseudo" autocomplete="username" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="email">Email</label>
+                                <input type="email" id="email" name="email" placeholder="nom@exemple.ch" autocomplete="email" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="password">Mot de passe</label>
+                                <input type="password" id="password" name="password" placeholder="Minimum 8 caracteres" autocomplete="new-password" required>
+                                <div id="password-strength" class="password-strength" style="display:none;">
+                                    <div class="strength-meter"><div id="strength-bar" class="strength-bar"></div></div>
+                                    <p id="strength-text"></p>
+                                </div>
+                                <div id="password-criteria" class="password-criteria">
+                                    <div class="criterion"><span id="crit-length" class="icon">○</span> Au moins 8 caractères</div>
+                                    <div class="criterion"><span id="crit-upper" class="icon">○</span> Au moins 1 majuscule</div>
+                                    <div class="criterion"><span id="crit-lower" class="icon">○</span> Au moins 1 minuscule</div>
+                                    <div class="criterion"><span id="crit-special" class="icon">○</span> Au moins 1 caractère spécial (!@#$%^&*)</div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="confirmPassword">Confirmer le mot de passe</label>
+                                <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Retapez le mot de passe" autocomplete="new-password" required>
+                            </div>
+
+                            <button type="submit" id="register-submit">Creer mon compte</button>
+                        </form>
+
+                        <p class="auth-meta">Deja inscrit ? <a href="/login">Se connecter</a></p>
+                    </section>
+                </div>
             </div>
         </section>
     </main>
@@ -27,5 +73,7 @@
     </footer>
 
     <script src="/js/nav.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/register.js"></script>
 </body>
 </html>

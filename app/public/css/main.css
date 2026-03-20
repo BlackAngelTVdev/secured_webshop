@@ -18,6 +18,13 @@ body {
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     color: var(--text);
     background: linear-gradient(180deg, #eef3ff 0%, var(--bg) 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
 }
 
 .container {
@@ -314,3 +321,170 @@ tr:hover td { background: #f9fafb; }
 }
 
 .admin-section { padding: 2rem 0 4rem; }
+
+/* =============================================================
+   Page login
+   ============================================================= */
+.auth-hero {
+    padding-top: 3.5rem;
+}
+
+.auth-layout {
+    display: grid;
+    grid-template-columns: 1fr 430px;
+    gap: 2rem;
+    align-items: start;
+}
+
+.auth-intro {
+    padding-top: 1rem;
+}
+
+.auth-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1.6rem;
+    border: 1px solid #e5e7eb;
+}
+
+.auth-card h2 {
+    margin: 0;
+    font-size: 1.45rem;
+}
+
+.auth-subtitle {
+    margin: 0.5rem 0 1.2rem;
+    color: var(--muted);
+}
+
+.auth-card input[type="text"],
+.auth-card input[type="email"],
+.auth-card input[type="password"] {
+    width: 100%;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-card input[type="text"]:focus,
+.auth-card input[type="email"]:focus,
+.auth-card input[type="password"]:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+
+.auth-card button[type="submit"] {
+    width: 100%;
+    margin-top: 0.2rem;
+}
+
+.auth-card button[disabled] {
+    opacity: 0.75;
+    cursor: wait;
+}
+
+.auth-meta {
+    margin: 1rem 0 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+}
+
+.auth-meta a {
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.auth-meta a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 900px) {
+    .auth-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .auth-card {
+        max-width: 540px;
+    }
+}
+
+/* Password Strength Indicator */
+.password-strength {
+    margin-top: 0.8rem;
+    padding: 0.6rem 0.8rem;
+    background: #f3f4f6;
+    border-radius: 6px;
+}
+
+.strength-meter {
+    width: 100%;
+    height: 6px;
+    background: #e5e7eb;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 0.4rem;
+}
+
+.strength-bar {
+    width: 0%;
+    height: 100%;
+    transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.strength-bar.weak {
+    width: 25%;
+    background: #dc2626;
+}
+
+.strength-bar.fair {
+    width: 50%;
+    background: #f59e0b;
+}
+
+.strength-bar.good {
+    width: 75%;
+    background: #84cc16;
+}
+
+.strength-bar.strong {
+    width: 100%;
+    background: #16a34a;
+}
+
+#strength-text {
+    margin: 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+/* Password Criteria */
+.password-criteria {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+}
+
+.criterion {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+    transition: color 0.2s ease;
+}
+
+.criterion .icon {
+    display: inline-block;
+    width: 18px;
+    color: #d1d5db;
+    font-weight: bold;
+}
+
+.criterion .icon.done {
+    color: #16a34a;
+}

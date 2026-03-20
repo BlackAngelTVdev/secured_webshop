@@ -1,15 +1,12 @@
-const path = require('path');
 const db = require('../config/db');
-
-const DEFAULT_USER_ID = 1;
 
 module.exports = {
 
     // ----------------------------------------------------------
     // GET /api/profile
     // ----------------------------------------------------------
-    get: (_req, res) => {
-        const userId = DEFAULT_USER_ID;
+    get: (req, res) => {
+        const userId = req.user.id;
 
         db.query('SELECT id, username, email, role, address, photo_path FROM users WHERE id = ?', [userId], (err, results) => {
             if (err) {
@@ -26,7 +23,7 @@ module.exports = {
     // POST /api/profile
     // ----------------------------------------------------------
     update: (req, res) => {
-        const userId = DEFAULT_USER_ID;
+        const userId = req.user.id;
         const { address } = req.body;
 
         db.query('UPDATE users SET address = ? WHERE id = ?', [address, userId], (err) => {
@@ -41,7 +38,7 @@ module.exports = {
     // POST /api/profile/photo
     // ----------------------------------------------------------
     uploadPhoto: (req, res) => {
-        const userId = DEFAULT_USER_ID; // TODO exercice 5 : remplacer par req.user.id
+        const userId = req.user.id;
 
         if (!req.file) {
             return res.status(400).json({ error: 'Aucun fichier reçu' });

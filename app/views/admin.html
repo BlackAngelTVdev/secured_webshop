@@ -45,25 +45,34 @@
     </footer>
 
     <script src="/js/nav.js"></script>
+    <script src="/js/auth.js"></script>
     <script>
-        fetch('/api/admin/users')
-            .then(r => r.json())
-            .then(users => {
-                const tbody = document.getElementById('user-table-body');
-                tbody.innerHTML = users.map(u => `
-                    <tr>
-                        <td>${u.id}</td>
-                        <td>${u.username}</td>
-                        <td>${u.email}</td>
-                        <td><span class="badge-${u.role}">${u.role}</span></td>
-                        <td>${u.address || '-'}</td>
-                    </tr>
-                `).join('');
-            })
-            .catch(() => {
-                document.getElementById('user-table-body').innerHTML =
-                    '<tr><td colspan="5">Erreur lors du chargement</td></tr>';
-            });
+        const auth = window.SecureShopAuth;
+
+        if (auth.requireAdminOrHome()) {
+            auth.authFetch('/api/admin/users')
+                .then(r => r.json())
+                .then(users => {
+                    if (!Array.isArray(users)) {
+                        throw new Error('Acces refuse');
+                    }
+                    const tbody = document.getElementById('user-table-body');
+                    tbody.innerHTML = users.map(u => `
+                        <tr>
+                            <td>${u.id}</td>
+                            <td>${u.username}</td>
+                            <td>${u.email}</td>
+                            <td><span class="badge-${u.role}">${u.role}</span></td>
+                            <td>${u.address || '-'}</td>
+                        </tr>
+                    `).join('');
+                })
+                .catch(() => {
+                    auth.clearSession();
+                    document.getElementById('user-table-body').innerHTML =
+                        '<tr><td colspan="5">Acces refuse ou session invalide</td></tr>';
+                });
+        }
     </script>
 </body>
 </html>
