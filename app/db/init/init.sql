@@ -50,4 +50,46 @@ INSERT INTO products (name, description, price, image_url) VALUES
         'Un casque confortable et moderne, parfait pour demarrer une vitrine produit.',
         89.00,
         'https://images.unsplash.com/photo-1518444065439-e933c06ce9cd?auto=format&fit=crop&w=600&q=80'
+    ),
+    (
+        'Clavier Mecanique Nova 75',
+        'Clavier compact avec switches tactiles, ideal pour le travail et le gaming.',
+        119.00,
+        'https://images.unsplash.com/photo-1517336714739-489689fd1ca8?auto=format&fit=crop&w=600&q=80'
+    ),
+    (
+        'Souris Sans Fil Glide M2',
+        'Souris precise et legere avec autonomie longue duree.',
+        49.90,
+        'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?auto=format&fit=crop&w=600&q=80'
+    ),
+    (
+        'Ecran UltraWide 34 pouces',
+        'Grand ecran immersif en haute definition pour la productivite.',
+        429.00,
+        'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=600&q=80'
+    ),
+    (
+        'Webcam HD Focus Pro',
+        'Webcam Full HD avec correction automatique de la lumiere.',
+        79.00,
+        'https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?auto=format&fit=crop&w=600&q=80'
+    ),
+    (
+        'Station d Accueil USB-C Dock 12-en-1',
+        'Hub polyvalent avec HDMI, Ethernet, USB et lecteur de cartes.',
+        99.00,
+        'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=600&q=80'
+    ),
+    (
+        'Chaise Ergonomique AirMesh',
+        'Chaise confortable avec soutien lombaire reglable pour longues sessions.',
+        269.00,
+        'https://images.unsplash.com/photo-1580480055273-228ff5388ef8?auto=format&fit=crop&w=600&q=80'
+    ),
+    (
+        'Lampe LED Bureau SmartLight',
+        'Lampe ajustable avec temperature de couleur variable et variateur tactile.',
+        39.90,
+        'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=600&q=80'
     );

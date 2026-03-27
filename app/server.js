@@ -38,10 +38,12 @@ app.use(express.static(path.join(__dirname, "public")));
 const authRoute    = require("./routes/Auth");
 const profileRoute = require("./routes/Profile");
 const adminRoute   = require("./routes/Admin");
+const productsRoute = require("./routes/Products");
 
 app.use("/api/auth",    authRoute);
 app.use("/api/profile", profileRoute);
 app.use("/api/admin",   adminRoute);
+app.use("/api/products", productsRoute);
 
 // ---------------------------------------------------------------
 // Routes pages (retournent du HTML)
