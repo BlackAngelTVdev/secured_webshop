@@ -101,6 +101,23 @@ const hasLowerCase = /[a-z]/.test(password);
 const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?\s]/.test(password);
 ```
 
+15. Limitation des tentatives de login (anti brute-force)
+- Limite a 5 tentatives par minute et par IP sur la route de connexion.
+- Retourne HTTP 429 avec un header Retry-After quand la limite est atteinte.
+- Fichiers: middleware/loginRateLimit.js, routes/Auth.js.
+
+Exemple:
+```js
+router.post('/login', loginRateLimit, controller.login);
+
+if (existing.count >= 5) {
+  res.set('Retry-After', String(retryAfterSeconds));
+  return res.status(429).json({
+    error: 'Trop de tentatives de connexion. Reessayez dans une minute.'
+  });
+}
+```
+
 ## Pourquoi ces changements
 - Reduire le risque de vol de compte.
 - Limiter les attaques courantes (SQL injection, vol de mot de passe, acces non autorise).
