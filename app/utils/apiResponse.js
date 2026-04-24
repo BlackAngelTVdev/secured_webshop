@@ -1,7 +1,23 @@
+function normalizeMessage(message) {
+    if (typeof message === 'string' && message.trim()) {
+        return message;
+    }
+
+    return 'Erreur serveur';
+}
+
+function normalizeCode(code) {
+    if (typeof code === 'string' && code.trim()) {
+        return code;
+    }
+
+    return 'API_ERROR';
+}
+
 function sendError(res, statusCode, message, code) {
     return res.status(statusCode).json({
-        error: message,
-        code: code || 'API_ERROR'
+        message: normalizeMessage(message),
+        code: normalizeCode(code)
     });
 }
 

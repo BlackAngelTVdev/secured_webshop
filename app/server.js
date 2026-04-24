@@ -12,10 +12,23 @@ const app = express();
 // Lecture des certificats SSL
 const privateKeyPath = path.join(__dirname, 'ssl', 'private.key');
 const certificatePath = path.join(__dirname, 'ssl', 'certificate.crt');
+const uploadDirectory = path.join(__dirname, 'public', 'uploads');
 
 const privateKey = fs.readFileSync(privateKeyPath, 'utf8');
 const certificate = fs.readFileSync(certificatePath, 'utf8');
 const credentials = { key: privateKey, cert: certificate };
+
+fs.mkdirSync(uploadDirectory, { recursive: true });
+
+const uploadErrors = {
+    LIMIT_PART_COUNT: [413, "Trop de parties dans l'upload", 'UPLOAD_PART_LIMIT'],
+    LIMIT_FILE_SIZE: [413, 'Fichier trop volumineux', 'UPLOAD_FILE_TOO_LARGE'],
+    LIMIT_FILE_COUNT: [400, 'Trop de fichiers envoyes', 'UPLOAD_FILE_COUNT_LIMIT'],
+    LIMIT_FIELD_KEY: [400, 'Nom de champ trop long', 'UPLOAD_FIELD_KEY_LIMIT'],
+    LIMIT_FIELD_VALUE: [400, 'Valeur de champ trop longue', 'UPLOAD_FIELD_VALUE_LIMIT'],
+    LIMIT_FIELD_COUNT: [400, 'Trop de champs envoyes', 'UPLOAD_FIELD_COUNT_LIMIT'],
+    LIMIT_UNEXPECTED_FILE: [400, 'Fichier inattendu', 'UPLOAD_UNEXPECTED_FILE']
+};
 
 // Middleware pour parser le corps des requêtes
 app.use(express.json());
@@ -67,15 +80,32 @@ app.use('/api', (_req, res) => {
 });
 
 // Gestion globale des exceptions pour eviter les fuites d'information.
-app.use((err, _req, res, _next) => {
+app.use((err, _req, res, next) => {
     console.error('Erreur non geree:', err && err.message ? err.message : err);
 
     if (res.headersSent) {
-        return;
+        return next(err);
+    }
+
+    if (err && (err.type === 'entity.parse.failed' || (err instanceof SyntaxError && err.status === 400 && 'body' in err))) {
+        return sendError(res, 400, 'Requete JSON invalide', 'INVALID_JSON_BODY');
+    }
+
+    if (err && (err.type === 'entity.too.large' || err.status === 413)) {
+        return sendError(res, 413, 'Requete trop volumineuse', 'PAYLOAD_TOO_LARGE');
+    }
+
+    if (err && err.type === 'request.aborted') {
+        return sendError(res, 400, 'Requete interrompue', 'REQUEST_ABORTED');
     }
 
     if (err && err.name === 'MulterError') {
-        return sendError(res, 400, 'Fichier invalide', 'UPLOAD_INVALID_FILE');
+        const mappedUploadError = uploadErrors[err.code] || [400, 'Fichier invalide', 'UPLOAD_INVALID_FILE'];
+        return sendError(res, mappedUploadError[0], mappedUploadError[1], mappedUploadError[2]);
+    }
+
+    if (err && ['ENOENT', 'EACCES', 'EPERM', 'ENOSPC'].includes(err.code)) {
+        return sendError(res, 500, 'Impossible de traiter le fichier', 'UPLOAD_STORAGE_ERROR');
     }
 
     return sendError(res, 500, 'Erreur serveur', 'INTERNAL_SERVER_ERROR');

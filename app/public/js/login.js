@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!response.ok) {
                 auth.clearSession();
-                showMessage('error', data.error || 'Connexion impossible.');
+                showMessage('error', data.message || 'Connexion impossible.');
                 return;
             }
 

@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             if (!response.ok) {
-                showMessage('error', data.error || 'Inscription impossible.');
+                showMessage('error', data.message || 'Inscription impossible.');
                 return;
             }
 
