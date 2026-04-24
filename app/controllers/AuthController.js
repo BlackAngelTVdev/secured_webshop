@@ -2,6 +2,7 @@ const db = require('../config/db');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const { sendError, sendSuccess } = require('../utils/apiResponse');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 const PASSWORD_PEPPER = process.env.PASSWORD_PEPPER || 'dev-pepper-change-me';
@@ -54,18 +55,18 @@ module.exports = {
         const { email, password } = req.body;
 
         if (!email || !password) {
-            return res.status(400).json({ error: 'Email et mot de passe requis' });
+            return sendError(res, 400, 'Email et mot de passe requis', 'AUTH_BAD_REQUEST');
         }
 
         const query = 'SELECT * FROM users WHERE email = ?';
 
         db.query(query, [email], (err, results) => {
             if (err) {
-                return res.status(500).json({ error: 'Erreur serveur' });
+                return sendError(res, 500, 'Erreur serveur', 'DB_QUERY_ERROR');
             }
 
             if (results.length === 0) {
-                return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
+                return sendError(res, 401, 'Email ou mot de passe incorrect', 'AUTH_INVALID_CREDENTIALS');
             }
 
             const user = results[0];
@@ -84,7 +85,7 @@ module.exports = {
             }
 
             if (!isValidPassword) {
-                return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
+                return sendError(res, 401, 'Email ou mot de passe incorrect', 'AUTH_INVALID_CREDENTIALS');
             }
 
             if (!hasSalt) {
@@ -95,7 +96,7 @@ module.exports = {
 
             const token = signToken(user);
 
-            res.json({
+            return sendSuccess(res, {
                 message: 'Connexion réussie',
                 token,
                 user: {
@@ -115,12 +116,12 @@ module.exports = {
         const { username, email, password } = req.body;
 
         if (!username || !email || !password) {
-            return res.status(400).json({ error: 'Tous les champs sont requis' });
+            return sendError(res, 400, 'Tous les champs sont requis', 'AUTH_BAD_REQUEST');
         }
 
         const passwordValidation = validatePasswordStrength(password);
         if (!passwordValidation.valid) {
-            return res.status(400).json({ error: passwordValidation.error });
+            return sendError(res, 400, passwordValidation.error, 'AUTH_WEAK_PASSWORD');
         }
 
         const passwordSalt = generateSalt();
@@ -131,9 +132,9 @@ module.exports = {
         db.query(insertSql, [username, email, passwordHash, passwordSalt, 'user'], (err, result) => {
             if (err) {
                 if (err.code === 'ER_DUP_ENTRY') {
-                    return res.status(409).json({ error: 'Cet email existe deja' });
+                    return sendError(res, 409, 'Cet email existe deja', 'AUTH_EMAIL_EXISTS');
                 }
-                return res.status(500).json({ error: 'Erreur serveur' });
+                return sendError(res, 500, 'Erreur serveur', 'DB_QUERY_ERROR');
             }
 
             const user = {
@@ -144,7 +145,7 @@ module.exports = {
             };
             const token = signToken(user);
 
-            res.status(201).json({ message: 'Inscription reussie', token, user });
+            return sendSuccess(res, { message: 'Inscription reussie', token, user }, 201);
         });
     }
 };

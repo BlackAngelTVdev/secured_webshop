@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { sendError, sendSuccess } = require('../utils/apiResponse');
 
 module.exports = {
 
@@ -8,9 +9,9 @@ module.exports = {
     getUsers: (_req, res) => {
         db.query('SELECT id, username, email, role, address FROM users', (err, results) => {
             if (err) {
-                return res.status(500).json({ error: 'Erreur serveur' });
+                return sendError(res, 500, 'Erreur serveur', 'DB_QUERY_ERROR');
             }
-            res.json(results);
+            return sendSuccess(res, results);
         });
     }
 };

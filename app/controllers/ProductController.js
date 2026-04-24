@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { sendError, sendSuccess } = require('../utils/apiResponse');
 
 module.exports = {
     list: (req, res) => {
@@ -11,10 +12,10 @@ module.exports = {
         db.query(sql, (err, rows) => {
             if (err) {
                 console.error('Erreur lors de la lecture des produits:', err);
-                return res.status(500).json({ error: 'Impossible de charger les produits.' });
+                return sendError(res, 500, 'Impossible de charger les produits.', 'DB_QUERY_ERROR');
             }
 
-            return res.json(rows);
+            return sendSuccess(res, rows);
         });
     }
 };

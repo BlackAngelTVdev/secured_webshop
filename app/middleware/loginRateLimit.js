@@ -1,5 +1,6 @@
 const WINDOW_MS = 60 * 1000;
 const MAX_ATTEMPTS = 5;
+const { sendError } = require('../utils/apiResponse');
 
 // Fenetre et limite de tentatives par IP.
 
@@ -33,9 +34,7 @@ module.exports = (req, res, next) => {
         // Trop de tentatives: on bloque temporairement cette IP.
         const retryAfterSeconds = Math.ceil((existing.resetTime - now) / 1000);
         res.set('Retry-After', String(retryAfterSeconds));
-        return res.status(429).json({
-            error: 'Trop de tentatives de connexion. Reessayez dans une minute.'
-        });
+        return sendError(res, 429, 'Trop de tentatives de connexion. Reessayez dans une minute.', 'AUTH_RATE_LIMIT');
     }
 
     // Tentative autorisee: on incremente et on laisse passer.

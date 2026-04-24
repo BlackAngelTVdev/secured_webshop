@@ -5,6 +5,7 @@ const path = require("path");
 const https = require("https");
 const http = require("http");
 const fs = require("fs");
+const { sendError } = require('./utils/apiResponse');
 
 const app = express();
 
@@ -59,6 +60,26 @@ app.get("/register", (_req, res) => res.sendFile(path.join(__dirname, "views", "
 app.get("/profile",  (_req, res) => res.sendFile(path.join(__dirname, "views", "profile.html")));
 app.get("/admin",    (_req, res) => res.sendFile(path.join(__dirname, "views", "admin.html")));
 app.get("/test",     (_req, res) => res.send("db admin: root, pwd : root"));
+
+// Reponse uniforme pour routes API non trouvees.
+app.use('/api', (_req, res) => {
+    return sendError(res, 404, 'Ressource API introuvable', 'API_NOT_FOUND');
+});
+
+// Gestion globale des exceptions pour eviter les fuites d'information.
+app.use((err, _req, res, _next) => {
+    console.error('Erreur non geree:', err && err.message ? err.message : err);
+
+    if (res.headersSent) {
+        return;
+    }
+
+    if (err && err.name === 'MulterError') {
+        return sendError(res, 400, 'Fichier invalide', 'UPLOAD_INVALID_FILE');
+    }
+
+    return sendError(res, 500, 'Erreur serveur', 'INTERNAL_SERVER_ERROR');
+});
 
 // Démarrage des serveurs HTTP et HTTPS
 const HTTP_PORT = 8080;

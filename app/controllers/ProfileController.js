@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { sendError, sendSuccess } = require('../utils/apiResponse');
 
 module.exports = {
 
@@ -10,12 +11,12 @@ module.exports = {
 
         db.query('SELECT id, username, email, role, address, photo_path FROM users WHERE id = ?', [userId], (err, results) => {
             if (err) {
-                return res.status(500).json({ error: 'Erreur serveur' });
+                return sendError(res, 500, 'Erreur serveur', 'DB_QUERY_ERROR');
             }
             if (results.length === 0) {
-                return res.status(404).json({ error: 'Utilisateur introuvable' });
+                return sendError(res, 404, 'Utilisateur introuvable', 'USER_NOT_FOUND');
             }
-            res.json(results[0]);
+            return sendSuccess(res, results[0]);
         });
     },
 
@@ -28,9 +29,9 @@ module.exports = {
 
         db.query('UPDATE users SET address = ? WHERE id = ?', [address, userId], (err) => {
             if (err) {
-                return res.status(500).json({ error: 'Erreur serveur' });
+                return sendError(res, 500, 'Erreur serveur', 'DB_QUERY_ERROR');
             }
-            res.json({ message: 'Profil mis à jour' });
+            return sendSuccess(res, { message: 'Profil mis a jour' });
         });
     },
 
@@ -41,16 +42,16 @@ module.exports = {
         const userId = req.user.id;
 
         if (!req.file) {
-            return res.status(400).json({ error: 'Aucun fichier reçu' });
+            return sendError(res, 400, 'Aucun fichier recu', 'UPLOAD_FILE_MISSING');
         }
 
         const photoPath = '/uploads/' + req.file.filename;
 
         db.query('UPDATE users SET photo_path = ? WHERE id = ?', [photoPath, userId], (err) => {
             if (err) {
-                return res.status(500).json({ error: 'Erreur serveur' });
+                return sendError(res, 500, 'Erreur serveur', 'DB_QUERY_ERROR');
             }
-            res.json({ message: 'Photo mise à jour', photo_path: photoPath });
+            return sendSuccess(res, { message: 'Photo mise a jour', photo_path: photoPath });
         });
     }
 };

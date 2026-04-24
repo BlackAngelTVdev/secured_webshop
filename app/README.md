@@ -1,125 +1,110 @@
-# secured_webshop - securite
+# secured_webshop - suivi detaille des activites securite
 
-Ce README resume rapidement les changements de securite implementes par rapport au projet original.
+Ce document explique les changements realises pour chaque activite deja implementee dans le projet.
 
-## Objectif
-Rendre l'application plus sure pour l'authentification, la protection des routes, la base de donnees et le transport reseau.
+## 6.1 Activites obligatoires (1 point par tache)
 
-## Changements
-
-1. Login frontend
-- Formulaire de connexion + message d'erreur/succes + redirection.
+### 1) Implementer une page de login en frontend - FAIT
+- Ajout d'une page de connexion avec formulaire email/mot de passe.
+- Ajout de validation client, affichage des erreurs/succes, desactivation du bouton pendant la requete.
+- Envoi d'une requete POST vers /api/auth/login puis stockage de la session (token + user) en localStorage.
+- Redirection automatique vers la page profil apres connexion reussie.
 - Fichiers: views/login.html, public/js/login.js.
 
-Exemple:
-```js
-const response = await fetch('/api/auth/login', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ email, password })
-});
-```
-
-2. Register frontend
-- Formulaire d'inscription complet + validation + confirmation du mot de passe.
+### 2) Implementer une page d'inscription en frontend - FAIT
+- Ajout d'une page d'inscription avec username, email, mot de passe, confirmation.
+- Verification des champs obligatoires et de la correspondance des mots de passe.
+- Appel API POST /api/auth/register et gestion des retours d'erreur metier (email duplique, validation, etc.).
+- Connexion automatique apres inscription et redirection vers /profile.
 - Fichiers: views/register.html, public/js/register.js.
 
-3. Mots de passe hashes
-- Passage du stockage en clair a bcrypt.
-- Fichier: controllers/AuthController.js.
+### 3) Remplacer les mots de passe en clair dans la base par un hash - FAIT
+- Utilisation de bcryptjs pour hasher les mots de passe a l'inscription.
+- Verification du hash a la connexion avec bcrypt.compareSync.
+- Compatibilite prevue pour les anciens comptes en clair et migration progressive vers hash lors de la connexion.
+- Fichiers: controllers/AuthController.js, package.json.
 
-Exemple:
-```js
-const passwordHash = bcrypt.hashSync(composePasswordInput(password, passwordSalt), 10);
-```
+### 4) Ajouter un sel - FAIT
+- Generation d'un sel aleatoire par utilisateur (crypto.randomBytes).
+- Ajout de la colonne password_salt dans la table users.
+- Le sel est utilise dans l'entree du hash et stocke en base pour verification ulterieure.
+- Fichiers: controllers/AuthController.js, db/init/init.sql.
 
-4. Sel (salt)
-- Ajout d'un sel par utilisateur et colonne en DB (`password_salt`).
-- Fichiers: db/init/init.sql, controllers/AuthController.js.
+### 5) Ajouter un poivre - FAIT
+- Ajout d'un poivre applicatif charge depuis les variables d'environnement.
+- Composition du secret hash sous la forme password + salt + pepper avant bcrypt.
+- Le poivre n'est pas stocke en base, il reste cote application.
+- Fichiers: controllers/AuthController.js, .env.
 
-Exemple SQL:
-```sql
-ALTER TABLE users ADD COLUMN password_salt VARCHAR(64);
-```
-
-5. Poivre (pepper)
-- Ajout d'un secret applicatif depuis les variables d'environnement.
-- Fichiers: .env, controllers/AuthController.js.
-
-Exemple:
-```js
-const PASSWORD_PEPPER = process.env.PASSWORD_PEPPER;
-const input = `${password}|${salt}|${PASSWORD_PEPPER}`;
-```
-
-6. Prevention SQL injection
-- Requetes parametrees (`?`) au lieu de concatenation de chaines.
+### 6) Corriger les requetes existantes afin de prevenir l'injection SQL - FAIT
+- Passage des requetes critiques en requetes parametrees avec placeholders ?.
+- Suppression de concatenations directes de donnees utilisateur dans les requetes SQL.
+- Application sur l'authentification et le profil (SELECT, INSERT, UPDATE sensibles).
 - Fichiers: controllers/AuthController.js, controllers/ProfileController.js.
 
-Exemple:
-```js
-db.query('SELECT * FROM users WHERE email = ?', [email], callback);
-```
-
-7. JWT
-- Creation de token a la connexion/inscription + verification middleware.
+### 7) Implementer l'utilisation d'un token JWT - FAIT
+- Generation d'un JWT apres login/register contenant id, email et role.
+- Verification du JWT via middleware d'authentification sur routes protegees.
+- Ajout d'un helper frontend pour injecter le header Authorization: Bearer.
 - Fichiers: controllers/AuthController.js, middleware/auth.js, public/js/auth.js.
 
-Exemple:
-```js
-const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '2h' });
-```
+### 8) Ajouter les roles administrateur et utilisateur dans le JWT et proteger les routes d'administration - FAIT
+- Ajout du role dans le payload JWT.
+- Creation du controle requireAdmin cote backend.
+- Protection des routes admin avec combinaison auth + requireAdmin.
+- Verification frontend avec redirection hors page admin si role non autorise.
+- Fichiers: middleware/auth.js, routes/Admin.js, public/js/auth.js.
 
-8. Roles dans JWT + protection admin
-- Ajout du role dans le token et blocage des routes admin si role != admin.
-- Fichiers: middleware/auth.js, routes/Admin.js.
+## 6.2 Activites faciles a choix (1 point par tache)
 
-Exemple:
-```js
-router.get('/users', auth, auth.requireAdmin, controller.getUsers);
-```
+### 9) Mettre en place le HTTPS - FAIT
+- Chargement des certificats serveur (cle privee + certificat).
+- Demarrage d'un serveur HTTPS dedie.
+- Redirection automatique HTTP vers HTTPS pour forcer le chiffrement du transport.
+- Fichiers: server.js, ssl/private.key, ssl/certificate.crt.
 
-9. HTTPS
-- Serveur HTTPS + redirection HTTP -> HTTPS.
-- Fichiers: server.js, ssl/certificate.crt, ssl/private.key.
+### 10) Mettre en place une politique de mot de passe fort avec indicateur de force - FAIT
+- Regles imposees: longueur minimale, majuscule, minuscule, caractere special.
+- Validation backend pour garantir la regle meme si le frontend est contourne.
+- Indicateur de force dynamique cote frontend avec etat visuel des criteres.
+- Fichiers: controllers/AuthController.js, public/js/register.js, views/register.html.
 
-Exemple:
-```js
-http.createServer(app).listen(8080);
-https.createServer(credentials, app).listen(8443);
-```
+### 11) Limiter la duree du token JWT et implementer un refresh token - NON FAIT
+### 12) Audit des dependances NPM + correction + documentation - NON FAIT
+### 13) Test resistance hash (John The Ripper, rainbow tables) - NON FAIT
+### 14) Gestion d'exceptions sans fuite d'information - FAIT
+- Uniformisation des erreurs API avec un helper commun (format stable: message + code).
+- Centralisation d'un handler global d'exceptions dans le serveur.
+- Ajout d'une reponse uniforme pour les routes API inexistantes (404) et les erreurs d'upload.
+- Objectif: eviter l'exposition de details techniques internes dans les reponses.
 
-10. Politique mot de passe fort + indicateur de force
-- Regles: min 8, majuscule, minuscule, caractere special.
-- Verification frontend + backend.
-- Fichiers: public/js/register.js, controllers/AuthController.js.
+## 6.3 Activites moyennes a choix (2 points par tache)
 
-Exemple:
-```js
-const hasUpperCase = /[A-Z]/.test(password);
-const hasLowerCase = /[a-z]/.test(password);
-const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?\s]/.test(password);
-```
-
-15. Limitation des tentatives de login (anti brute-force)
-- Limite a 5 tentatives par minute et par IP sur la route de connexion.
-- Retourne HTTP 429 avec un header Retry-After quand la limite est atteinte.
+### 15) Limiter le nombre de tentatives de login (ex: 5 essais/minute/IP) - FAIT
+- Middleware de rate limit dedie a la route /api/auth/login.
+- Fenetre de 60 secondes, blocage apres 5 tentatives, retour HTTP 429.
+- Ajout du header Retry-After pour indiquer le delai restant.
 - Fichiers: middleware/loginRateLimit.js, routes/Auth.js.
 
-Exemple:
-```js
-router.post('/login', loginRateLimit, controller.login);
+### 16) Verrouillage de compte apres N echecs + stockage BDD + deblocage - NON FAIT
+### 17) Audit securite OWASP Top 10 2025 - NON FAIT
+### 18) Chiffrement des donnees sensibles en base - NON FAIT
+### 19) Correction d'une faille XSS identifiee - NON FAIT
+### 20) Moindre privilege BDD avec utilisateur dedie scripts - NON FAIT
 
-if (existing.count >= 5) {
-  res.set('Retry-After', String(retryAfterSeconds));
-  return res.status(429).json({
-    error: 'Trop de tentatives de connexion. Reessayez dans une minute.'
-  });
-}
-```
+## 6.4 Activites difficiles a choix (3 points par tache)
 
-## Pourquoi ces changements
-- Reduire le risque de vol de compte.
-- Limiter les attaques courantes (SQL injection, vol de mot de passe, acces non autorise).
-- Chiffrer les echanges reseau.
-- Ajouter un controle d'acces clair entre user et admin.
+### 1) Protection CSRF sur un formulaire - NON FAIT
+### 2) Journalisation securisee des evenements - NON FAIT
+### 3) Authentification a double facteur - NON FAIT
+### 4) Securisation upload photo contre fichiers malveillants - NON FAIT
+### 5) Scan OWASP ZAP + correction d'au moins 3 alertes - NON FAIT
+
+## Resume des points (etat actuel)
+
+- Obligatoires valides: 8 / 8.
+- Faciles valides: 3 / 6.
+- Moyennes valides: 1 / 6.
+- Difficiles valides: 0 / 5.
+
+Total actuel estime (en comptant seulement les taches FAIT): 12 points.
