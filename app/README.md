@@ -96,7 +96,12 @@ Ce document explique les changements realises pour chaque activite deja implemen
 
 ### 1) Protection CSRF sur un formulaire - NON FAIT
 ### 2) Journalisation securisee des evenements - NON FAIT
-### 3) Authentification a double facteur - NON FAIT
+### 3) Authentification a double facteur - FAIT
+- Mise en place d'une 2FA TOTP compatible Google Authenticator.
+- Activation/desactivation depuis la page profil avec QR code et cle manuelle.
+- Connexion en 2 etapes: mot de passe, puis code 2FA si active.
+- Identifiants de challenge scopes avec UUID (APP_INSTANCE_UUID + randomUUID).
+- Fichiers: controllers/AuthController.js, routes/Auth.js, views/login.html, public/js/login.js, views/profile.html, db/init/init.sql, ../.env.example.
 ### 4) Securisation upload photo contre fichiers malveillants - NON FAIT
 ### 5) Scan OWASP ZAP + correction d'au moins 3 alertes - NON FAIT
 
@@ -105,6 +110,6 @@ Ce document explique les changements realises pour chaque activite deja implemen
 - Obligatoires valides: 8 / 8.
 - Faciles valides: 3 / 6.
 - Moyennes valides: 1 / 6.
-- Difficiles valides: 0 / 5.
+- Difficiles valides: 1 / 5.
 
-Total actuel estime (en comptant seulement les taches FAIT): 12 points.
+Total actuel estime (en comptant seulement les taches FAIT): 15 points.
