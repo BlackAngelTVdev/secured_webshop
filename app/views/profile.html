@@ -56,6 +56,50 @@
                     <button type="submit">Envoyer la photo</button>
                 </form>
 
+                <hr>
+
+                <!-- Section 2FA -->
+                <div id="2fa-section">
+                    <h2>Authentification à deux facteurs (2FA)</h2>
+                    <div id="2fa-status">
+                        <span class="info-row"><strong>Statut :</strong> <span id="2fa-status-text">Chargement...</span></span>
+                    </div>
+
+                    <!-- Zone de configuration (affichée quand 2FA est désactivée) -->
+                    <div id="2fa-setup-area" style="display: none;">
+                        <p style="margin-bottom: 1rem;">Cliquez sur "Configurer" pour générer un QR code.</p>
+                        <button id="2fa-config-btn">Configurer la 2FA</button>
+                    </div>
+
+                    <!-- Conteneur QR Code (apparaît après configuration) -->
+                    <div id="2fa-qr-container" style="display: none; margin-top: 1.5rem;">
+                        <p>Scannez ce QR code avec votre application d'authentification :</p>
+                        <img id="2fa-qr-image" src="" alt="QR Code 2FA" style="max-width: 200px; margin: 1rem 0; border-radius: 8px; display: block;">
+                        <div class="info-row" style="word-break: break-all; margin-top: 1rem;">
+                            <strong>Code secret :</strong>
+                            <code id="2fa-secret" style="font-size: 0.9rem;"></code>
+                        </div>
+                        <form id="2fa-enable-form" style="margin-top: 1rem;">
+                            <div class="form-group">
+                                <label for="2fa-code">Entrez le code de votre application :</label>
+                                <input type="text" id="2fa-code" placeholder="000000" maxlength="6" autocomplete="one-time-code">
+                            </div>
+                            <button type="submit">Activer la 2FA</button>
+                        </form>
+                    </div>
+
+                    <!-- Zone de désactivation (affichée quand 2FA est activée) -->
+                    <div id="2fa-disable-area" style="display: none;">
+                        <form id="2fa-disable-form">
+                            <div class="form-group">
+                                <label for="2fa-disable-code">Entrez un code pour désactiver la 2FA :</label>
+                                <input type="text" id="2fa-disable-code" placeholder="000000" maxlength="6" autocomplete="one-time-code">
+                            </div>
+                            <button type="submit" class="danger">Désactiver la 2FA</button>
+                        </form>
+                    </div>
+                </div>
+
             </div>
         </div>
     </main>
@@ -82,10 +126,14 @@
         async function loadProfile() {
             const res = await auth.authFetch('/api/profile');
             if (res.status === 401) {
+                alert('Profile 401! Token invalide ou expire, redirection...');
                 window.location.href = '/login';
                 return;
             }
-            if (!res.ok) return;
+            if (!res.ok) {
+                alert('Profile error: ' + res.status);
+                return;
+            }
             const user = await res.json();
 
             document.getElementById('username').textContent = user.username;
@@ -151,7 +199,116 @@
 
         if (canAccessProfile) {
             loadProfile();
+            load2FAStatus();
         }
+
+        // ------------------------------------------------------------------
+        // Gestion 2FA
+        // ------------------------------------------------------------------
+        async function load2FAStatus() {
+            try {
+                const token = localStorage.getItem('secureShopToken');
+                const res = await fetch('/api/2fa/status', {
+                    headers: {
+                        'Authorization': token ? `Bearer ${token}` : ''
+                    }
+                });
+                if (!res.ok) {
+                    let errText = 'HTTP ' + res.status;
+                    try { errText = await res.text(); } catch(e) {}
+                    alert('2FA Erreur corps: ' + errText);
+                    document.getElementById('2fa-status-text').textContent = 'Erreur (HTTP ' + res.status + ')';
+                    return;
+                }
+                const data = await res.json();
+                update2FAUI(data.enabled);
+            } catch (err) {
+                alert('Exception: ' + err.message);
+                document.getElementById('2fa-status-text').textContent = 'Erreur réseau';
+            }
+        }
+
+        function update2FAUI(enabled) {
+            const statusText = document.getElementById('2fa-status-text');
+            const setupArea = document.getElementById('2fa-setup-area');
+            const disableArea = document.getElementById('2fa-disable-area');
+
+            statusText.innerHTML = enabled
+                ? '<span class="enabled">Activée ✓</span>'
+                : '<span class="disabled">Désactivée</span>';
+
+            document.getElementById('2fa-qr-container').style.display = 'none';
+
+            if (enabled) {
+                setupArea.style.display = 'none';
+                disableArea.style.display = 'block';
+            } else {
+                setupArea.style.display = 'block';
+                disableArea.style.display = 'none';
+            }
+        }
+
+        document.getElementById('2fa-config-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('2fa-config-btn');
+            btn.disabled = true;
+            btn.textContent = 'Génération en cours...';
+
+            const res = await auth.authFetch('/api/2fa/setup');
+            const data = await res.json();
+
+            btn.disabled = false;
+            btn.textContent = 'Configurer la 2FA';
+
+            if (!res.ok) {
+                showMessage('error', data.message || 'Erreur lors de la génération du QR code');
+                return;
+            }
+
+            document.getElementById('2fa-qr-image').src = data.qrCodeDataUrl;
+            document.getElementById('2fa-secret').textContent = data.secret;
+            document.getElementById('2fa-qr-container').style.display = 'block';
+            document.getElementById('2fa-setup-area').style.display = 'none';
+        });
+
+        document.getElementById('2fa-enable-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const code = document.getElementById('2fa-code').value;
+
+            const res = await auth.authFetch('/api/2fa/enable', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                showMessage('success', '2FA activée avec succès !');
+                document.getElementById('2fa-enable-form').reset();
+                load2FAStatus();
+            } else {
+                showMessage('error', data.message || 'Code invalide');
+            }
+        });
+
+        document.getElementById('2fa-disable-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const code = document.getElementById('2fa-disable-code').value;
+
+            const res = await auth.authFetch('/api/2fa/disable', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                showMessage('success', '2FA désactivée.');
+                document.getElementById('2fa-disable-form').reset();
+                load2FAStatus();
+            } else {
+                showMessage('error', data.message || 'Code invalide');
+            }
+        });
     </script>
 </body>
 </html>

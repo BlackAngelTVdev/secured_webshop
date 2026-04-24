@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { sendError, sendSuccess } = require('../utils/apiResponse');
+const TwoFactorController = require('./TwoFactorController');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 const PASSWORD_PEPPER = process.env.PASSWORD_PEPPER || 'dev-pepper-change-me';
@@ -86,6 +87,20 @@ module.exports = {
 
             if (!isValidPassword) {
                 return sendError(res, 401, 'Email ou mot de passe incorrect', 'AUTH_INVALID_CREDENTIALS');
+            }
+
+            if (user.two_fa_enabled && user.two_fa_secret) {
+                const challengeId = TwoFactorController.createLoginChallenge(user);
+                return sendSuccess(res, {
+                    requires2FA: true,
+                    challengeId,
+                    user: {
+                        id: user.id,
+                        username: user.username,
+                        email: user.email,
+                        role: user.role
+                    }
+                });
             }
 
             if (!hasSalt) {

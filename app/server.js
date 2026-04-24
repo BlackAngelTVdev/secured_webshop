@@ -53,11 +53,13 @@ const authRoute    = require("./routes/Auth");
 const profileRoute = require("./routes/Profile");
 const adminRoute   = require("./routes/Admin");
 const productsRoute = require("./routes/Products");
+const twoFactorRoute = require("./routes/TwoFactor");
 
 app.use("/api/auth",    authRoute);
 app.use("/api/profile", profileRoute);
 app.use("/api/admin",   adminRoute);
 app.use("/api/products", productsRoute);
+app.use("/api/2fa", twoFactorRoute);
 
 // ---------------------------------------------------------------
 // Routes pages (retournent du HTML)

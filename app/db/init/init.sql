@@ -23,7 +23,9 @@ CREATE TABLE IF NOT EXISTS users (
     password_salt VARCHAR(64),
     role       VARCHAR(20)  NOT NULL DEFAULT 'user',
     address    VARCHAR(255),
-    photo_path VARCHAR(255)
+    photo_path VARCHAR(255),
+    two_fa_enabled TINYINT(1) DEFAULT 0,
+    two_fa_secret VARCHAR(64)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------
@@ -41,7 +43,7 @@ CREATE TABLE IF NOT EXISTS products (
 -- Données de départ
 -- ---------------------------------------------------------------
 INSERT INTO users (username, email, password, password_salt, role, address) VALUES
-    ('admin',  'admin@webshop.com', '$2b$10$xrcBHV1M5KBq8LHuOwdQwOlFpS./WRJNPFFm8f8SlfKzGfkEeVJB2', '8f0d3a9b7c1e4d2f9a6b3c5d7e1f2a4b', 'admin', '1 Rue de la Paix, 1000 Lausanne'),
+    ('admin',  'admin@webshop.com', '$2b$10$7EhBt0xAKgSq7r2W6yrunu8m/05sqtQuj/as85IJKBe8TVtliP9Ba', '8f0d3a9b7c1e4d2f9a6b3c5d7e1f2a4b', 'admin', '1 Rue de la Paix, 1000 Lausanne'),
     ('alice',  'alice@webshop.com', '$2b$10$3uQgdWrcjv0n9m2rnvJ7geGVJs4.WiwfvKQwt4rxFxgfGPSobgeBa', '4c2a9e7d1b6f3a8c0e5d2f7b9a1c4e6d', 'user',  '42 Avenue des Alpes, 1200 Genève');
 
 INSERT INTO products (name, description, price, image_url) VALUES
