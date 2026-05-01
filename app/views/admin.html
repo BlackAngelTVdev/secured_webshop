@@ -49,30 +49,50 @@
     <script>
         const auth = window.SecureShopAuth;
 
-        if (auth.requireAdminOrHome()) {
-            auth.authFetch('/api/admin/users')
-                .then(r => r.json())
-                .then(users => {
-                    if (!Array.isArray(users)) {
-                        throw new Error('Acces refuse');
-                    }
-                    const tbody = document.getElementById('user-table-body');
-                    tbody.innerHTML = users.map(u => `
-                        <tr>
-                            <td>${u.id}</td>
-                            <td>${u.username}</td>
-                            <td>${u.email}</td>
-                            <td><span class="badge-${u.role}">${u.role}</span></td>
-                            <td>${u.address || '-'}</td>
-                        </tr>
-                    `).join('');
-                })
-                .catch(() => {
-                    auth.clearSession();
-                    document.getElementById('user-table-body').innerHTML =
-                        '<tr><td colspan="5">Acces refuse ou session invalide</td></tr>';
-                });
-        }
+        (async () => {
+            if (!auth.requireAuth('/login')) {
+                return;
+            }
+
+            const response = await auth.authFetch('/api/admin/users');
+
+            if (response.status === 401) {
+                window.location.href = '/login';
+                return;
+            }
+
+            if (response.status === 403) {
+                window.location.href = '/';
+                return;
+            }
+
+            if (!response.ok) {
+                document.getElementById('user-table-body').innerHTML =
+                    '<tr><td colspan="5">Impossible de charger les utilisateurs</td></tr>';
+                return;
+            }
+
+            const users = await response.json();
+            if (!Array.isArray(users)) {
+                document.getElementById('user-table-body').innerHTML =
+                    '<tr><td colspan="5">Acces refuse</td></tr>';
+                return;
+            }
+
+            const tbody = document.getElementById('user-table-body');
+            tbody.innerHTML = users.map(u => `
+                <tr>
+                    <td>${u.id}</td>
+                    <td>${u.username}</td>
+                    <td>${u.email}</td>
+                    <td><span class="badge-${u.role}">${u.role}</span></td>
+                    <td>${u.address || '-'}</td>
+                </tr>
+            `).join('');
+        })().catch(() => {
+            document.getElementById('user-table-body').innerHTML =
+                '<tr><td colspan="5">Acces refuse ou session invalide</td></tr>';
+        });
     </script>
 </body>
 </html>

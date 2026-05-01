@@ -1,7 +1,6 @@
 (function () {
     const TOKEN_KEY = 'secureShopToken';
     const REFRESH_TOKEN_KEY = 'secureShopRefreshToken';
-    const USER_KEY = 'secureShopUser';
 
     function getToken() {
         return localStorage.getItem(TOKEN_KEY);
@@ -12,14 +11,7 @@
     }
 
     function getUser() {
-        const raw = localStorage.getItem(USER_KEY);
-        if (!raw) return null;
-
-        try {
-            return JSON.parse(raw);
-        } catch (_err) {
-            return null;
-        }
+        return null;
     }
 
     function setSession(session) {
@@ -29,15 +21,11 @@
         if (session && session.refreshToken) {
             localStorage.setItem(REFRESH_TOKEN_KEY, session.refreshToken);
         }
-        if (session && session.user) {
-            localStorage.setItem(USER_KEY, JSON.stringify(session.user));
-        }
     }
 
     function clearSession() {
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(REFRESH_TOKEN_KEY);
-        localStorage.removeItem(USER_KEY);
     }
 
     function authHeaders(extraHeaders) {
@@ -95,8 +83,7 @@
 
             setSession({
                 token: data.token,
-                refreshToken: data.refreshToken,
-                user: data.user || getUser()
+                refreshToken: data.refreshToken
             });
 
             return true;
@@ -115,16 +102,8 @@
     }
 
     function requireAdminOrHome() {
-        const token = getToken();
-        const user = getUser();
-
-        if (!token) {
+        if (!getToken()) {
             window.location.href = '/login';
-            return false;
-        }
-
-        if (!user || user.role !== 'admin') {
-            window.location.href = '/';
             return false;
         }
 
