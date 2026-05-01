@@ -16,7 +16,7 @@ Ce document explique les changements réalisés pour chaque activité déjà imp
 | 8) Roles administrateur et utilisateur dans le JWT | FAIT |
 | 9) Mise en place du HTTPS | FAIT |
 | 10) Politique de mot de passe fort | FAIT |
-| 11) Limiter la durée du token JWT et refresh token | NON FAIT |
+| 11) Limiter la durée du token JWT et refresh token | FAIT |
 | 12) Audit des dépendances NPM | NON FAIT |
 | 13) Test de résistance du hash | NON FAIT |
 | 14) Gestion d'exceptions sans fuite d'information | FAIT |
@@ -67,6 +67,7 @@ Les certificats serveur, c'est-à-dire la clé privée et le certificat, sont ch
 Une politique de mot de passe fort a été mise en place avec des règles sur la longueur minimale, les majuscules, les minuscules et les caractères spéciaux. La validation est contrôlée côté backend pour rester efficace même si le frontend est contourné. Un indicateur de force dynamique a aussi été ajouté côté frontend pour afficher l'état des critères. Fichiers concernés: controllers/AuthController.js, public/js/register.js et views/register.html.
 
 ### 11) Limiter la duree du token JWT et implementer un refresh token
+Le JWT d'acces est emis avec une duree courte configurable via `JWT_EXPIRES_IN` (15 minutes par defaut) et un refresh token distinct est aussi emis avec sa propre duree via `REFRESH_TOKEN_EXPIRES_IN`. Un endpoint `/api/auth/refresh` renouvelle la session, et le client retente automatiquement les requetes protegees apres expiration du JWT. Fichiers concernes: utils/tokens.js, controllers/AuthController.js, controllers/TwoFactorController.js, routes/Auth.js et public/js/auth.js.
 ### 12) Audit des dependances NPM + correction + documentation
 ### 13) Test resistance hash (John The Ripper, rainbow tables)
 ### 14) Gestion d'exceptions sans fuite d'information

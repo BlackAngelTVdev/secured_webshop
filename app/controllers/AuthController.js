@@ -1,11 +1,10 @@
 const db = require('../config/db');
-const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { sendError, sendSuccess } = require('../utils/apiResponse');
+const { signAccessToken, signRefreshToken, verifyRefreshToken } = require('../utils/tokens');
 const TwoFactorController = require('./TwoFactorController');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 const PASSWORD_PEPPER = process.env.PASSWORD_PEPPER || 'dev-pepper-change-me';
 const BCRYPT_ROUNDS = 10;
 
@@ -15,14 +14,6 @@ function composePasswordInput(password, salt) {
 
 function generateSalt() {
     return crypto.randomBytes(16).toString('hex');
-}
-
-function signToken(user) {
-    return jwt.sign(
-        { id: user.id, email: user.email, role: user.role },
-        JWT_SECRET,
-        { expiresIn: '2h' }
-    );
 }
 
 function validatePasswordStrength(password) {
@@ -109,11 +100,13 @@ module.exports = {
                 db.query('UPDATE users SET password = ?, password_salt = ? WHERE id = ?', [upgradedHash, newSalt, user.id], () => {});
             }
 
-            const token = signToken(user);
+            const token = signAccessToken(user);
+            const refreshToken = signRefreshToken(user);
 
             return sendSuccess(res, {
                 message: 'Connexion réussie',
                 token,
+                refreshToken,
                 user: {
                     id: user.id,
                     username: user.username,
@@ -158,9 +151,54 @@ module.exports = {
                 email,
                 role: 'user'
             };
-            const token = signToken(user);
+            const token = signAccessToken(user);
+            const refreshToken = signRefreshToken(user);
 
-            return sendSuccess(res, { message: 'Inscription reussie', token, user }, 201);
+            return sendSuccess(res, { message: 'Inscription reussie', token, refreshToken, user }, 201);
+        });
+    },
+
+    // ----------------------------------------------------------
+    // POST /api/auth/refresh
+    // ----------------------------------------------------------
+    refresh: (req, res) => {
+        const { refreshToken } = req.body;
+
+        if (!refreshToken) {
+            return sendError(res, 400, 'Refresh token requis', 'AUTH_REFRESH_TOKEN_MISSING');
+        }
+
+        let payload;
+        try {
+            payload = verifyRefreshToken(refreshToken);
+        } catch (_err) {
+            return sendError(res, 401, 'Refresh token invalide ou expire', 'AUTH_REFRESH_TOKEN_INVALID');
+        }
+
+        db.query('SELECT id, username, email, role FROM users WHERE id = ?', [payload.id], (err, results) => {
+            if (err) {
+                return sendError(res, 500, 'Erreur serveur', 'DB_QUERY_ERROR');
+            }
+
+            if (!results || results.length === 0) {
+                return sendError(res, 401, 'Refresh token invalide ou expire', 'AUTH_REFRESH_TOKEN_INVALID');
+            }
+
+            const user = results[0];
+            const token = signAccessToken(user);
+            const nextRefreshToken = signRefreshToken(user);
+
+            return sendSuccess(res, {
+                message: 'Session renouvelee',
+                token,
+                refreshToken: nextRefreshToken,
+                user: {
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    role: user.role
+                }
+            });
         });
     }
 };

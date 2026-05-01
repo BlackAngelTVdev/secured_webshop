@@ -131,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            auth.setSession({ token: data.token, user: data.user });
+            auth.setSession({ token: data.token, refreshToken: data.refreshToken, user: data.user });
 
             showMessage('success', data.message || 'Compte cree. Redirection vers le profil...');
             setTimeout(() => {

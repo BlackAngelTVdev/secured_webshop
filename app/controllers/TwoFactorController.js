@@ -2,23 +2,14 @@ const crypto = require('crypto');
 const speakeasy = require('speakeasy');
 const qrcode = require('qrcode');
 const db = require('../config/db');
-const jwt = require('jsonwebtoken');
 const { sendError, sendSuccess } = require('../utils/apiResponse');
+const { signAccessToken, signRefreshToken } = require('../utils/tokens');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 const CHALLENGE_TTL_MS = 5 * 60 * 1000;
 const PENDING_SETUP_TTL_MS = 10 * 60 * 1000;
 
 const loginChallenges = new Map();
 const pendingSetups = new Map();
-
-function signToken(user) {
-    return jwt.sign(
-        { id: user.id, email: user.email, role: user.role },
-        JWT_SECRET,
-        { expiresIn: '2h' }
-    );
-}
 
 function cleanupExpiredEntries() {
     const now = Date.now();
@@ -85,11 +76,13 @@ const TwoFactorController = {
         }
 
         loginChallenges.delete(challengeId);
-        const token = signToken(challenge.user);
+        const token = signAccessToken(challenge.user);
+        const refreshToken = signRefreshToken(challenge.user);
 
         return sendSuccess(res, {
             message: 'Connexion 2FA reussie',
             token,
+            refreshToken,
             user: challenge.user
         });
     },

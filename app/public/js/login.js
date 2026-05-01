@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return false;
             }
 
-            auth.setSession({ token: data.token, user: data.user });
+            auth.setSession({ token: data.token, refreshToken: data.refreshToken, user: data.user });
             showMessage('success', 'Connexion réussie. Redirection...');
             setTimeout(() => { window.location.href = '/profile'; }, 900);
             return true;
@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             showMessage('success', data.message || 'Connexion reussie. Redirection...');
 
-            auth.setSession({ token: data.token, user: data.user });
+            auth.setSession({ token: data.token, refreshToken: data.refreshToken, user: data.user });
 
             setTimeout(() => {
                 window.location.href = '/profile';
