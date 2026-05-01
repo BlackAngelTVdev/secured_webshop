@@ -3,10 +3,12 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { sendError, sendSuccess } = require('../utils/apiResponse');
 const { signAccessToken, signRefreshToken, verifyRefreshToken } = require('../utils/tokens');
+const loginRateLimit = require('../middleware/loginRateLimit');
 const TwoFactorController = require('./TwoFactorController');
 
 const PASSWORD_PEPPER = process.env.PASSWORD_PEPPER || 'dev-pepper-change-me';
 const BCRYPT_ROUNDS = 10;
+const ACCOUNT_LOCK_THRESHOLD = Math.max(1, Math.ceil((loginRateLimit.MAX_ATTEMPTS || 5) / 2));
 
 function composePasswordInput(password, salt) {
     return `${password}|${salt}|${PASSWORD_PEPPER}`;
@@ -62,6 +64,11 @@ module.exports = {
             }
 
             const user = results[0];
+            const isAccountLocked = Number(user.account_locked) === 1;
+            if (isAccountLocked) {
+                return sendError(res, 423, 'Compte verrouille. Contactez un administrateur.', 'AUTH_ACCOUNT_LOCKED');
+            }
+
             const hashPrefix = '$2';
             const isHash = typeof user.password === 'string' && user.password.startsWith(hashPrefix);
             const hasSalt = typeof user.password_salt === 'string' && user.password_salt.length > 0;
@@ -77,7 +84,24 @@ module.exports = {
             }
 
             if (!isValidPassword) {
+                const nextFailedAttempts = (Number(user.failed_login_attempts) || 0) + 1;
+                const shouldLock = nextFailedAttempts >= ACCOUNT_LOCK_THRESHOLD;
+                const lockSql = shouldLock
+                    ? 'UPDATE users SET failed_login_attempts = ?, account_locked = 1, account_locked_at = NOW() WHERE id = ?'
+                    : 'UPDATE users SET failed_login_attempts = ? WHERE id = ?';
+                const lockParams = shouldLock ? [nextFailedAttempts, user.id] : [nextFailedAttempts, user.id];
+
+                db.query(lockSql, lockParams, () => {});
+
                 return sendError(res, 401, 'Email ou mot de passe incorrect', 'AUTH_INVALID_CREDENTIALS');
+            }
+
+            if (Number(user.failed_login_attempts) > 0 || isAccountLocked) {
+                db.query(
+                    'UPDATE users SET failed_login_attempts = 0, account_locked = 0, account_locked_at = NULL WHERE id = ?',
+                    [user.id],
+                    () => {}
+                );
             }
 
             if (user.two_fa_enabled && user.two_fa_secret) {
@@ -175,7 +199,7 @@ module.exports = {
             return sendError(res, 401, 'Refresh token invalide ou expire', 'AUTH_REFRESH_TOKEN_INVALID');
         }
 
-        db.query('SELECT id, username, email, role FROM users WHERE id = ?', [payload.id], (err, results) => {
+        db.query('SELECT id, username, email, role, account_locked FROM users WHERE id = ?', [payload.id], (err, results) => {
             if (err) {
                 return sendError(res, 500, 'Erreur serveur', 'DB_QUERY_ERROR');
             }
@@ -185,6 +209,10 @@ module.exports = {
             }
 
             const user = results[0];
+            if (Number(user.account_locked) === 1) {
+                return sendError(res, 423, 'Compte verrouille. Contactez un administrateur.', 'AUTH_ACCOUNT_LOCKED');
+            }
+
             const token = signAccessToken(user);
             const nextRefreshToken = signRefreshToken(user);
 

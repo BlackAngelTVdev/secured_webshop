@@ -21,7 +21,7 @@ Ce document explique les changements réalisés pour chaque activité déjà imp
 | 13) Test de résistance du hash | NON FAIT |
 | 14) Gestion d'exceptions sans fuite d'information | FAIT |
 | 15) Limiter les tentatives de login | FAIT |
-| 16) Verrouillage de compte après échecs | NON FAIT |
+| 16) Verrouillage de compte après échecs | FAIT |
 | 17) Audit sécurité OWASP Top 10 2025 | NON FAIT |
 | 18) Chiffrement des données sensibles en base | NON FAIT |
 | 19) Correction d'une faille XSS | NON FAIT |
@@ -79,6 +79,7 @@ Les erreurs API ont été uniformisées avec un helper commun au format stable m
 Un middleware de rate limit a été ajouté sur la route /api/auth/login. La fenêtre est de 60 secondes, avec blocage après 5 tentatives et retour HTTP 429. Le header Retry-After informe aussi sur le délai restant. Fichiers concernés: middleware/loginRateLimit.js et routes/Auth.js.
 
 ### 16) Verrouillage de compte apres N echecs + stockage BDD + deblocage
+Un compte est maintenant verrouille apres un nombre d'echecs egal a la moitie du rate limit IP, soit 3 tentatives pour une limite IP de 5. L'etat de verrouillage est stocke en base avec le compteur d'echecs, le login refuse ensuite les comptes verrouilles, et l'administration peut les debloquer depuis le tableau des utilisateurs via un bouton dedie. Fichiers concernes: controllers/AuthController.js, controllers/AdminController.js, middleware/loginRateLimit.js, routes/Admin.js, db/init/init.sql et views/admin.html.
 ### 17) Audit securite OWASP Top 10 2025
 ### 18) Chiffrement des donnees sensibles en base
 ### 19) Correction d'une faille XSS identifiee

@@ -42,3 +42,6 @@ module.exports = (req, res, next) => {
     attemptsByIp.set(ip, existing);
     next();
 };
+
+module.exports.WINDOW_MS = WINDOW_MS;
+module.exports.MAX_ATTEMPTS = MAX_ATTEMPTS;

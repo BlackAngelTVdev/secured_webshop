@@ -27,11 +27,13 @@
                             <th>Nom</th>
                             <th>Email</th>
                             <th>Rôle</th>
+                            <th>Etat</th>
                             <th>Adresse</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody id="user-table-body">
-                        <tr><td colspan="5">Chargement...</td></tr>
+                        <tr><td colspan="7">Chargement...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -75,7 +77,7 @@
             const users = await response.json();
             if (!Array.isArray(users)) {
                 document.getElementById('user-table-body').innerHTML =
-                    '<tr><td colspan="5">Acces refuse</td></tr>';
+                    '<tr><td colspan="7">Acces refuse</td></tr>';
                 return;
             }
 
@@ -86,12 +88,40 @@
                     <td>${u.username}</td>
                     <td>${u.email}</td>
                     <td><span class="badge-${u.role}">${u.role}</span></td>
+                    <td>${Number(u.account_locked) === 1 ? 'Verrouille' : 'Actif'}</td>
                     <td>${u.address || '-'}</td>
+                    <td>
+                        ${Number(u.account_locked) === 1 ? `<button type="button" class="unlock-user-btn" data-user-id="${u.id}">Debloquer</button>` : '-'}
+                    </td>
                 </tr>
             `).join('');
+
+            document.querySelectorAll('.unlock-user-btn').forEach((button) => {
+                button.addEventListener('click', async () => {
+                    const userId = button.getAttribute('data-user-id');
+                    button.disabled = true;
+                    button.textContent = 'Deblocage...';
+
+                    try {
+                        const unlockResponse = await auth.authFetch(`/api/admin/users/${userId}/unlock`, {
+                            method: 'POST'
+                        });
+
+                        if (!unlockResponse.ok) {
+                            throw new Error('Deblocage impossible');
+                        }
+
+                        window.location.reload();
+                    } catch (_error) {
+                        button.disabled = false;
+                        button.textContent = 'Debloquer';
+                        alert('Impossible de debloquer ce compte.');
+                    }
+                });
+            });
         })().catch(() => {
             document.getElementById('user-table-body').innerHTML =
-                '<tr><td colspan="5">Acces refuse ou session invalide</td></tr>';
+                '<tr><td colspan="7">Acces refuse ou session invalide</td></tr>';
         });
     </script>
 </body>
