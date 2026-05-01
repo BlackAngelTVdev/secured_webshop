@@ -1,115 +1,97 @@
-# secured_webshop - suivi detaille des activites securite
+# secured_webshop - suivi détaillé des activités de sécurité
 
-Ce document explique les changements realises pour chaque activite deja implementee dans le projet.
+Ce document explique les changements réalisés pour chaque activité déjà implémentée dans le projet.
 
-## 6.1 Activites obligatoires (1 point par tache)
+## Tableau de synthèse
 
-### 1) Implementer une page de login en frontend - FAIT
-- Ajout d'une page de connexion avec formulaire email/mot de passe.
-- Ajout de validation client, affichage des erreurs/succes, desactivation du bouton pendant la requete.
-- Envoi d'une requete POST vers /api/auth/login puis stockage de la session (token + user) en localStorage.
-- Redirection automatique vers la page profil apres connexion reussie.
-- Fichiers: views/login.html, public/js/login.js.
+| Activite | Statut |
+|---|---|
+| 1) Page de login en frontend | FAIT |
+| 2) Page d'inscription en frontend | FAIT |
+| 3) Mots de passe hashes en base | FAIT |
+| 4) Ajout d'un sel | FAIT |
+| 5) Ajout d'un poivre | FAIT |
+| 6) Protection contre l'injection SQL | FAIT |
+| 7) Token JWT | FAIT |
+| 8) Roles administrateur et utilisateur dans le JWT | FAIT |
+| 9) Mise en place du HTTPS | FAIT |
+| 10) Politique de mot de passe fort | FAIT |
+| 11) Limiter la durée du token JWT et refresh token | NON FAIT |
+| 12) Audit des dépendances NPM | NON FAIT |
+| 13) Test de résistance du hash | NON FAIT |
+| 14) Gestion d'exceptions sans fuite d'information | FAIT |
+| 15) Limiter les tentatives de login | FAIT |
+| 16) Verrouillage de compte après échecs | NON FAIT |
+| 17) Audit sécurité OWASP Top 10 2025 | NON FAIT |
+| 18) Chiffrement des données sensibles en base | NON FAIT |
+| 19) Correction d'une faille XSS | NON FAIT |
+| 20) Moindre privilège BDD | NON FAIT |
+| 1) Protection CSRF sur un formulaire | NON FAIT |
+| 2) Journalisation sécurisée des événements | NON FAIT |
+| 3) Authentification a double facteur | FAIT |
+| 4) Sécurisation de l'upload photo | NON FAIT |
+| 5) Scan OWASP ZAP | NON FAIT |
 
-### 2) Implementer une page d'inscription en frontend - FAIT
-- Ajout d'une page d'inscription avec username, email, mot de passe, confirmation.
-- Verification des champs obligatoires et de la correspondance des mots de passe.
-- Appel API POST /api/auth/register et gestion des retours d'erreur metier (email duplique, validation, etc.).
-- Connexion automatique apres inscription et redirection vers /profile.
-- Fichiers: views/register.html, public/js/register.js.
+## 6.1 Activités obligatoires (1 point par tâche)
 
-### 3) Remplacer les mots de passe en clair dans la base par un hash - FAIT
-- Utilisation de bcryptjs pour hasher les mots de passe a l'inscription.
-- Verification du hash a la connexion avec bcrypt.compareSync.
-- Compatibilite prevue pour les anciens comptes en clair et migration progressive vers hash lors de la connexion.
-- Fichiers: controllers/AuthController.js, package.json.
+### 1) Implementer une page de login en frontend
+Cette fonctionnalité ajoute une page de connexion avec un formulaire email et mot de passe. Elle intègre aussi une validation côté client, l'affichage des erreurs et des succès, ainsi que la désactivation du bouton pendant la requête. Une requête POST est envoyée vers /api/auth/login, puis la session est stockée dans localStorage avec le token et les données utilisateur. Après une connexion réussie, l'utilisateur est redirigé automatiquement vers la page profil. Fichiers concernés: views/login.html et public/js/login.js.
 
-### 4) Ajouter un sel - FAIT
-- Generation d'un sel aleatoire par utilisateur (crypto.randomBytes).
-- Ajout de la colonne password_salt dans la table users.
-- Le sel est utilise dans l'entree du hash et stocke en base pour verification ulterieure.
-- Fichiers: controllers/AuthController.js, db/init/init.sql.
+### 2) Implementer une page d'inscription en frontend
+Cette fonctionnalité ajoute une page d'inscription avec username, email, mot de passe et confirmation. Les champs obligatoires sont vérifiés, de même que la correspondance des mots de passe. Le frontend appelle ensuite l'API POST /api/auth/register et gère les erreurs métier comme un email dupliqué ou une validation invalide. Une fois l'inscription terminée, la connexion se fait automatiquement avec redirection vers /profile. Fichiers concernés: views/register.html et public/js/register.js.
 
-### 5) Ajouter un poivre - FAIT
-- Ajout d'un poivre applicatif charge depuis les variables d'environnement.
-- Composition du secret hash sous la forme password + salt + pepper avant bcrypt.
-- Le poivre n'est pas stocke en base, il reste cote application.
-- Fichiers: controllers/AuthController.js, .env.
+### 3) Remplacer les mots de passe en clair dans la base par un hash
+Les mots de passe sont hashés à l'inscription avec bcryptjs afin de ne plus les stocker en clair. À la connexion, le hash est vérifié avec bcrypt.compareSync. Le code reste compatible avec les anciens comptes en clair et prévoit une migration progressive vers le hash au moment de la connexion. Fichiers concernés: controllers/AuthController.js et package.json.
 
-### 6) Corriger les requetes existantes afin de prevenir l'injection SQL - FAIT
-- Passage des requetes critiques en requetes parametrees avec placeholders ?.
-- Suppression de concatenations directes de donnees utilisateur dans les requetes SQL.
-- Application sur l'authentification et le profil (SELECT, INSERT, UPDATE sensibles).
-- Fichiers: controllers/AuthController.js, controllers/ProfileController.js.
+### 4) Ajouter un sel
+Un sel aléatoire est généré pour chaque utilisateur avec crypto.randomBytes. La colonne password_salt a été ajoutée dans la table users. Ce sel entre dans le calcul du hash et est stocké en base pour permettre la vérification ultérieure. Fichiers concernés: controllers/AuthController.js et db/init/init.sql.
 
-### 7) Implementer l'utilisation d'un token JWT - FAIT
-- Generation d'un JWT apres login/register contenant id, email et role.
-- Verification du JWT via middleware d'authentification sur routes protegees.
-- Ajout d'un helper frontend pour injecter le header Authorization: Bearer.
-- Fichiers: controllers/AuthController.js, middleware/auth.js, public/js/auth.js.
+### 5) Ajouter un poivre
+Un poivre applicatif est chargé depuis les variables d'environnement pour renforcer le hash. Le secret est composé sous la forme password + salt + pepper avant le passage dans bcrypt. Ce poivre n'est pas stocké en base, il reste uniquement côté application. Fichiers concernés: controllers/AuthController.js et .env.
 
-### 8) Ajouter les roles administrateur et utilisateur dans le JWT et proteger les routes d'administration - FAIT
-- Ajout du role dans le payload JWT.
-- Creation du controle requireAdmin cote backend.
-- Protection des routes admin avec combinaison auth + requireAdmin.
-- Verification frontend avec redirection hors page admin si role non autorise.
-- Fichiers: middleware/auth.js, routes/Admin.js, public/js/auth.js.
+### 6) Corriger les requetes existantes afin de prevenir l'injection SQL
+Les requêtes critiques ont été converties en requêtes paramétrées avec des placeholders ? afin de limiter les injections SQL. Les concaténations directes de données utilisateur dans le SQL ont été supprimées. Cette correction s'applique aux parties sensibles de l'authentification et du profil, notamment les SELECT, INSERT et UPDATE. Fichiers concernés: controllers/AuthController.js et controllers/ProfileController.js.
 
-## 6.2 Activites faciles a choix (1 point par tache)
+### 7) Implementer l'utilisation d'un token JWT
+Un JWT est généré après login ou inscription avec les données id, email et rôle. Ce token est ensuite vérifié par un middleware d'authentification sur les routes protégées. Un helper frontend a aussi été ajouté pour injecter automatiquement l'en-tête Authorization: Bearer. Fichiers concernés: controllers/AuthController.js, middleware/auth.js et public/js/auth.js.
 
-### 9) Mettre en place le HTTPS - FAIT
-- Chargement des certificats serveur (cle privee + certificat).
-- Demarrage d'un serveur HTTPS dedie.
-- Redirection automatique HTTP vers HTTPS pour forcer le chiffrement du transport.
-- Fichiers: server.js, ssl/private.key, ssl/certificate.crt.
+### 8) Ajouter les roles administrateur et utilisateur dans le JWT et proteger les routes d'administration
+Le rôle a été ajouté dans le payload JWT pour distinguer administrateur et utilisateur. Côté backend, un contrôle requireAdmin a été créé afin de protéger les routes d'administration avec la combinaison auth + requireAdmin. Côté frontend, une vérification redirige hors de la page admin si le rôle n'est pas autorisé. Fichiers concernés: middleware/auth.js, routes/Admin.js et public/js/auth.js.
 
-### 10) Mettre en place une politique de mot de passe fort avec indicateur de force - FAIT
-- Regles imposees: longueur minimale, majuscule, minuscule, caractere special.
-- Validation backend pour garantir la regle meme si le frontend est contourne.
-- Indicateur de force dynamique cote frontend avec etat visuel des criteres.
-- Fichiers: controllers/AuthController.js, public/js/register.js, views/register.html.
+## 6.2 Activités faciles à choix (1 point par tâche)
 
-### 11) Limiter la duree du token JWT et implementer un refresh token - NON FAIT
-### 12) Audit des dependances NPM + correction + documentation - NON FAIT
-### 13) Test resistance hash (John The Ripper, rainbow tables) - NON FAIT
-### 14) Gestion d'exceptions sans fuite d'information - FAIT
-- Uniformisation des erreurs API avec un helper commun (format stable: message + code).
-- Centralisation d'un handler global d'exceptions dans le serveur.
-- Ajout d'une reponse uniforme pour les routes API inexistantes (404) et les erreurs d'upload.
-- Objectif: eviter l'exposition de details techniques internes dans les reponses.
+### 9) Mettre en place le HTTPS
+Les certificats serveur, c'est-à-dire la clé privée et le certificat, sont chargés pour activer le chiffrement. Un serveur HTTPS dédié a été mis en place, avec une redirection automatique de HTTP vers HTTPS pour forcer le transport sécurisé. Fichiers concernés: server.js, ssl/private.key et ssl/certificate.crt.
 
-## 6.3 Activites moyennes a choix (2 points par tache)
+### 10) Mettre en place une politique de mot de passe fort avec indicateur de force
+Une politique de mot de passe fort a été mise en place avec des règles sur la longueur minimale, les majuscules, les minuscules et les caractères spéciaux. La validation est contrôlée côté backend pour rester efficace même si le frontend est contourné. Un indicateur de force dynamique a aussi été ajouté côté frontend pour afficher l'état des critères. Fichiers concernés: controllers/AuthController.js, public/js/register.js et views/register.html.
 
-### 15) Limiter le nombre de tentatives de login (ex: 5 essais/minute/IP) - FAIT
-- Middleware de rate limit dedie a la route /api/auth/login.
-- Fenetre de 60 secondes, blocage apres 5 tentatives, retour HTTP 429.
-- Ajout du header Retry-After pour indiquer le delai restant.
-- Fichiers: middleware/loginRateLimit.js, routes/Auth.js.
+### 11) Limiter la duree du token JWT et implementer un refresh token
+### 12) Audit des dependances NPM + correction + documentation
+### 13) Test resistance hash (John The Ripper, rainbow tables)
+### 14) Gestion d'exceptions sans fuite d'information
+Les erreurs API ont été uniformisées avec un helper commun au format stable message + code. Un handler global d'exceptions a aussi été centralisé dans le serveur. En plus, les routes API inexistantes et les erreurs d'upload renvoient une réponse uniforme afin d'éviter l'exposition de détails techniques internes.
 
-### 16) Verrouillage de compte apres N echecs + stockage BDD + deblocage - NON FAIT
-### 17) Audit securite OWASP Top 10 2025 - NON FAIT
-### 18) Chiffrement des donnees sensibles en base - NON FAIT
-### 19) Correction d'une faille XSS identifiee - NON FAIT
-### 20) Moindre privilege BDD avec utilisateur dedie scripts - NON FAIT
+## 6.3 Activités moyennes à choix (2 points par tâche)
 
-## 6.4 Activites difficiles a choix (3 points par tache)
+### 15) Limiter le nombre de tentatives de login (ex: 5 essais/minute/IP)
+Un middleware de rate limit a été ajouté sur la route /api/auth/login. La fenêtre est de 60 secondes, avec blocage après 5 tentatives et retour HTTP 429. Le header Retry-After informe aussi sur le délai restant. Fichiers concernés: middleware/loginRateLimit.js et routes/Auth.js.
 
-### 1) Protection CSRF sur un formulaire - NON FAIT
-### 2) Journalisation securisee des evenements - NON FAIT
-### 3) Authentification a double facteur - FAIT
-- Mise en place d'une 2FA TOTP compatible Google Authenticator.
-- Activation/desactivation depuis la page profil avec QR code et cle manuelle.
-- Connexion en 2 etapes: mot de passe, puis code 2FA si active.
-- Identifiants de challenge scopes avec UUID (APP_INSTANCE_UUID + randomUUID).
-- Fichiers: controllers/AuthController.js, routes/Auth.js, views/login.html, public/js/login.js, views/profile.html, db/init/init.sql, ../.env.example.
-### 4) Securisation upload photo contre fichiers malveillants - NON FAIT
-### 5) Scan OWASP ZAP + correction d'au moins 3 alertes - NON FAIT
+### 16) Verrouillage de compte apres N echecs + stockage BDD + deblocage
+### 17) Audit securite OWASP Top 10 2025
+### 18) Chiffrement des donnees sensibles en base
+### 19) Correction d'une faille XSS identifiee
+### 20) Moindre privilège BDD avec utilisateur dédié scripts
 
-## Resume des points (etat actuel)
+## 6.4 Activités difficiles à choix (3 points par tâche)
 
-- Obligatoires valides: 8 / 8.
-- Faciles valides: 3 / 6.
-- Moyennes valides: 1 / 6.
-- Difficiles valides: 1 / 5.
+### 1) Protection CSRF sur un formulaire
+### 2) Journalisation sécurisée des événements
+### 3) Authentification a double facteur
+Une authentification à double facteur TOTP compatible Google Authenticator a été mise en place. L'activation et la désactivation se font depuis la page profil avec QR code et clé manuelle. La connexion se déroule en deux étapes, d'abord le mot de passe puis le code 2FA si la protection est activée. Les identifiants de challenge utilisent des UUID scopes avec APP_INSTANCE_UUID et randomUUID. Fichiers concernés: controllers/AuthController.js, routes/Auth.js, views/login.html, public/js/login.js, views/profile.html, db/init/init.sql et ../.env.example.
+### 4) Sécurisation de l'upload photo contre fichiers malveillants
+### 5) Scan OWASP ZAP + correction d'au moins 3 alertes
 
-Total actuel estime (en comptant seulement les taches FAIT): 15 points.
+## Résumé des points (état actuel)
+
+Le bilan actuel est de 8 activités obligatoires valides sur 8, 3 activités faciles valides sur 6, 1 activité moyenne valide sur 6 et 1 activité difficile valide sur 5. En comptant seulement les tâches marquées FAIT, le total actuel estimé est de 15 points.
