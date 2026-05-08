@@ -1,0 +1,28 @@
+Date,Nom,Temps,État,Description
+"17/03/2026","refactor(app): refactor project structure and add initial homepage","[?]","[?]","refactor(app): refactor project structure and add initial homepage"
+"17/03/2026","Added minimal DB, routes and scripts to enable the challenges","[?]","[?]","Added minimal DB, routes and scripts to enable the challenges"
+"17/03/2026","refactor(app): add route breach","[?]","[?]","refactor(app): add route breach"
+"17/03/2026","refactor(html): fix text errors","[?]","[?]","refactor(html): fix text errors"
+
+"18/03/2026","Merge pull request #2 from ETML-INF/refactor_app","[?]","[?]","Merge pull request #2 from ETML-INF/refactor_app Refactor app"
+
+"20/03/2026","Feat(10premier): 10 step","[130]","[DONE]","Feat(10premier): 10 step  j'ai oublié de commit du coup y a tous dans le même... jai fait les points de 1 a 10. Juste le HTTPS et le Password a pas été completement validé"
+
+"27/03/2026","Chor(Raport): debut du raport","[20]","[DONE]","Chor(Raport): debut du raport  et ajoute du ingnore"
+"27/03/2026","Feat(Product): ajout de produit (Non Demander)","[20]","[DONE]","Feat(Product): ajout de produit (Non Demander)"
+"27/03/2026","Feat(rate limit): si on spam les mdp","[65]","[DONE]","Feat(rate limit): si on spam les mdp"
+
+"24/04/2026","Chor(Traking): Stop traking env ans cert files","[5]","[DONE]","Chor(Traking): Stop traking env ans cert files"
+"24/04/2026","Feat(Exception): n'affiche plus trop dans les erreurs","[20]","[DONE]","Feat(Exception): n'affiche plus trop dans les erreurs"
+"24/04/2026","Feat(ShowMessages): affiche les erreurs","[15]","[DONE]","Feat(ShowMessages): affiche les erreurs"
+"24/04/2026","Feat(2FA): ajout du 2FA","[1h12]","[DONE]","Feat(2FA): ajout du 2FA"
+"24/04/2026","CHOR(readme)","[?]","[?]","CHOR(readme)"
+
+"01/05/2026","Chor(Readme): tableau","[20]","[DONE]","Chor(Readme): tableau"
+"01/05/2026","Feat(Token): temps de refresh","[20]","[DONE]","Feat(Token): temps de refresh"
+"01/05/2026","Fix(Midel): admin pages","[7]","[DONE]","Fix(Midel): admin pages"
+"01/05/2026","Feat(verou)","[15]","[DONE]","Feat(verou)"
+
+"08/05/2026","Fix: readme","[10]","[DONE]","Fix: readme"
+"08/05/2026","Chor: readme","[15]","[DONE]","Chor: readme"
+"08/05/2026","Feat: sso","[30]","[DONE]","Feat: sso"
