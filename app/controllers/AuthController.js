@@ -1,14 +1,18 @@
 const db = require('../config/db');
+const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { sendError, sendSuccess } = require('../utils/apiResponse');
-const { signAccessToken, signRefreshToken, verifyRefreshToken } = require('../utils/tokens');
+const { signRefreshToken, verifyRefreshToken } = require('../utils/tokens');
 const loginRateLimit = require('../middleware/loginRateLimit');
 const TwoFactorController = require('./TwoFactorController');
 
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 const PASSWORD_PEPPER = process.env.PASSWORD_PEPPER || 'dev-pepper-change-me';
 const BCRYPT_ROUNDS = 10;
-const ACCOUNT_LOCK_THRESHOLD = Math.max(1, Math.ceil((loginRateLimit.MAX_ATTEMPTS || 5) / 2));
+
+const MAX_ATTEMPTS = loginRateLimit.MAX_ATTEMPTS;
+const ACCOUNT_LOCK_THRESHOLD = Math.ceil(MAX_ATTEMPTS /2);
 
 function composePasswordInput(password, salt) {
     return `${password}|${salt}|${PASSWORD_PEPPER}`;
@@ -16,6 +20,14 @@ function composePasswordInput(password, salt) {
 
 function generateSalt() {
     return crypto.randomBytes(16).toString('hex');
+}
+
+function signToken(user) {
+    return jwt.sign(
+        { id: user.id, email: user.email, role: user.role },
+        JWT_SECRET,
+        { expiresIn: '2h' }
+    );
 }
 
 function validatePasswordStrength(password) {
@@ -64,9 +76,10 @@ module.exports = {
             }
 
             const user = results[0];
-            const isAccountLocked = Number(user.account_locked) === 1;
-            if (isAccountLocked) {
-                return sendError(res, 423, 'Compte verrouille. Contactez un administrateur.', 'AUTH_ACCOUNT_LOCKED');
+
+            // Vérifier si le compte est verrouillé
+            if (Number(user.account_locked) === 1) {
+                return sendError(res, 423, 'Compte verrouillé. Contactez un administrateur.', 'AUTH_ACCOUNT_LOCKED');
             }
 
             const hashPrefix = '$2';
@@ -84,25 +97,35 @@ module.exports = {
             }
 
             if (!isValidPassword) {
-                const nextFailedAttempts = (Number(user.failed_login_attempts) || 0) + 1;
-                const shouldLock = nextFailedAttempts >= ACCOUNT_LOCK_THRESHOLD;
-                const lockSql = shouldLock
-                    ? 'UPDATE users SET failed_login_attempts = ?, account_locked = 1, account_locked_at = NOW() WHERE id = ?'
-                    : 'UPDATE users SET failed_login_attempts = ? WHERE id = ?';
-                const lockParams = shouldLock ? [nextFailedAttempts, user.id] : [nextFailedAttempts, user.id];
-
-                db.query(lockSql, lockParams, () => {});
-
+                // Incrémenter le compteur d'essais échoués
+                const newAttempts = Number(user.failed_login_attempts || 0) + 1;
+                
+                // Vérifier si on atteint le seuil de verrouillage
+                if (newAttempts >= ACCOUNT_LOCK_THRESHOLD) {
+                    // Verrouiller le compte
+                    db.query(
+                        'UPDATE users SET failed_login_attempts = ?, account_locked = 1, account_locked_at = NOW() WHERE id = ?',
+                        [newAttempts, user.id],
+                        () => {}
+                    );
+                    return sendError(res, 423, 'Trop d\'essais échoués. Compte verrouillé. Contactez un administrateur.', 'AUTH_ACCOUNT_LOCKED');
+                } else {
+                    // Juste incrémenter le compteur
+                    db.query(
+                        'UPDATE users SET failed_login_attempts = ? WHERE id = ?',
+                        [newAttempts, user.id],
+                        () => {}
+                    );
+                }
                 return sendError(res, 401, 'Email ou mot de passe incorrect', 'AUTH_INVALID_CREDENTIALS');
             }
 
-            if (Number(user.failed_login_attempts) > 0 || isAccountLocked) {
-                db.query(
-                    'UPDATE users SET failed_login_attempts = 0, account_locked = 0, account_locked_at = NULL WHERE id = ?',
-                    [user.id],
-                    () => {}
-                );
-            }
+            // Réinitialiser le compteur d'essais échoués si la connexion est réussie
+            db.query(
+                'UPDATE users SET failed_login_attempts = 0 WHERE id = ?',
+                [user.id],
+                () => {}
+            );
 
             if (user.two_fa_enabled && user.two_fa_secret) {
                 const challengeId = TwoFactorController.createLoginChallenge(user);
@@ -124,13 +147,11 @@ module.exports = {
                 db.query('UPDATE users SET password = ?, password_salt = ? WHERE id = ?', [upgradedHash, newSalt, user.id], () => {});
             }
 
-            const token = signAccessToken(user);
-            const refreshToken = signRefreshToken(user);
+            const token = signToken(user);
 
             return sendSuccess(res, {
                 message: 'Connexion réussie',
                 token,
-                refreshToken,
                 user: {
                     id: user.id,
                     username: user.username,
@@ -175,10 +196,9 @@ module.exports = {
                 email,
                 role: 'user'
             };
-            const token = signAccessToken(user);
-            const refreshToken = signRefreshToken(user);
+            const token = signToken(user);
 
-            return sendSuccess(res, { message: 'Inscription reussie', token, refreshToken, user }, 201);
+            return sendSuccess(res, { message: 'Inscription reussie', token, user }, 201);
         });
     },
 
@@ -189,44 +209,34 @@ module.exports = {
         const { refreshToken } = req.body;
 
         if (!refreshToken) {
-            return sendError(res, 400, 'Refresh token requis', 'AUTH_REFRESH_TOKEN_MISSING');
+            return sendError(res, 400, 'Refresh token requis', 'AUTH_REFRESH_TOKEN_REQUIRED');
         }
 
         let payload;
         try {
             payload = verifyRefreshToken(refreshToken);
-        } catch (_err) {
-            return sendError(res, 401, 'Refresh token invalide ou expire', 'AUTH_REFRESH_TOKEN_INVALID');
+        } catch (_error) {
+            return sendError(res, 401, 'Refresh token invalide', 'AUTH_REFRESH_TOKEN_INVALID');
         }
 
-        db.query('SELECT id, username, email, role, account_locked FROM users WHERE id = ?', [payload.id], (err, results) => {
-            if (err) {
-                return sendError(res, 500, 'Erreur serveur', 'DB_QUERY_ERROR');
+        const user = {
+            id: payload.id,
+            email: payload.email,
+            role: payload.role
+        };
+
+        const token = signToken(user);
+        const nextRefreshToken = signRefreshToken(user);
+
+        return sendSuccess(res, {
+            message: 'Session renouvelee',
+            token,
+            refreshToken: nextRefreshToken,
+            user: {
+                id: user.id,
+                email: user.email,
+                role: user.role
             }
-
-            if (!results || results.length === 0) {
-                return sendError(res, 401, 'Refresh token invalide ou expire', 'AUTH_REFRESH_TOKEN_INVALID');
-            }
-
-            const user = results[0];
-            if (Number(user.account_locked) === 1) {
-                return sendError(res, 423, 'Compte verrouille. Contactez un administrateur.', 'AUTH_ACCOUNT_LOCKED');
-            }
-
-            const token = signAccessToken(user);
-            const nextRefreshToken = signRefreshToken(user);
-
-            return sendSuccess(res, {
-                message: 'Session renouvelee',
-                token,
-                refreshToken: nextRefreshToken,
-                user: {
-                    id: user.id,
-                    username: user.username,
-                    email: user.email,
-                    role: user.role
-                }
-            });
         });
     }
 };
