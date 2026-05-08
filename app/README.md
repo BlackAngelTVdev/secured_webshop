@@ -363,6 +363,171 @@ if (verified) {
 ### 4) Sécurisation de l'upload photo contre fichiers malveillants
 ### 5) Scan OWASP ZAP + correction d'au moins 3 alertes
 
+## 7. SSO Bridge - Authentification via Portail OAuth Externe
+
+### Présentation générale
+SSO Bridge permet l'intégration d'une **authentification externe (OAuth)** via un portail SSO centralisé, tout en conservant l'authentification locale JWT. Les deux systèmes coexistent : les utilisateurs peuvent se connecter soit directement via leurs identifiants stockés localement, soit via le portail SSO externe.
+
+**Fichiers concernés:**
+- `app/controllers/SsoController.js` – Handler Express pour les 3 phases SSO
+- `app/routes/Auth.js` – Routes SSO (`/sso/login`, `/sso/callback`, `/sso/logout`)
+- `app/server.js` – Middleware session (stockage correlation IDs)
+- `.env` – Configuration SSO (API_KEY, SSO_PORTAL, APP_URL)
+- `app/package.json` – `express-session` pour gestion de session
+
+### Configuration SSO
+
+Pour activer SSO Bridge, modifiez le `.env` dans le répertoire racine :
+
+```env
+# SSO Bridge (OAuth Portal Integration)
+SSO_ENABLED=true
+API_KEY=YOUR_SSO_API_KEY        # Clé secrète fournie par le portail SSO
+SSO_PORTAL=https://auth.example.com/auth/  # URL du portail SSO
+APP_URL=https://localhost:8443  # URL locale (callback redirection)
+```
+
+### Phase 1 : Redirection vers le portail SSO
+
+**Endpoint:** `GET /api/auth/sso/login`
+
+```js
+// 1. L'utilisateur clique sur "Se connecter avec SSO".
+window.location.href = '/api/auth/sso/login';
+
+// 2. Le backend génère un correlation ID unique.
+const cid = await bridge.generateCorrelationId();
+
+// 3. Le backend redirige vers le portail SSO avec l'ID et l'URL de callback.
+const finalUrl = `${SSO_PORTAL}/redirect?correlationId=${cid}&redirectUri=${CALLBACK_URL}`;
+return res.redirect(finalUrl);
+```
+
+### Phase 2 : Retour du portail et validation
+
+**Endpoint:** `GET /api/auth/sso/callback?correlationId=XXX`
+
+```js
+// 1. Le portail SSO redirige l'utilisateur avec le correlation ID.
+// URL : https://localhost:8443/api/auth/sso/callback?correlationId=XXX
+
+// 2. Le backend vérifie le correlation ID auprès du portail SSO.
+const bridgeUrl = `${SSO_PORTAL}/bridge/check?token=${API_KEY}&correlationId=${cid}`;
+const ssoResult = await fetch(bridgeUrl);  // Retour: { email, username, ... }
+
+// 3. Recherche ou création d'utilisateur dans la BDD locale.
+const user = await findOrCreateSsoUser(ssoResult);
+// Priorité: email match > username match > création nouveau compte
+
+// 4. Si utilisateur trouvé, signature des tokens JWT locaux.
+const accessToken = signAccessToken(user);
+const refreshToken = signRefreshToken(user);
+
+// 5. Retour des tokens au frontend.
+return res.json({
+	accessToken,
+	refreshToken,
+	user: { id, username, email, isadmin }
+});
+```
+
+### Phase 3 : Déconnexion (Locale + Portail)
+
+**Endpoint:** `GET /api/auth/sso/logout`
+
+```js
+// 1. Effacement de la session locale.
+req.session.sso_correlation_id = null;
+
+// 2. Redirection vers le portail SSO pour déconnexion centralisée.
+const portalLogoutUrl = `${SSO_PORTAL}/logout?redirectUri=${RETURN_URL}`;
+return res.redirect(portalLogoutUrl);
+```
+
+### Endpoint de diagnostic
+
+**Endpoint:** `GET /api/auth/sso/status`
+
+Vérifie si SSO est configuré et retourne les endpoints disponibles :
+
+```json
+{
+  "status": "ok",
+  "message": "SSO Bridge configuré et prêt",
+  "links": {
+    "login": "https://localhost:8443/api/auth/sso/login",
+    "callback": "https://localhost:8443/api/auth/sso/callback?correlationId=XXX",
+    "logout": "https://localhost:8443/api/auth/sso/logout"
+  }
+}
+```
+
+### Logique de création utilisateur SSO
+
+Quand un utilisateur s'authentifie via SSO pour la première fois, le système crée automatiquement un compte local avec:
+- **Username** – Dérivé de l'email (partie avant @) ou du username SSO, normalisé et rendu unique
+- **Email** – Récupéré du portail SSO
+- **Password** – Généré aléatoirement (inutilisé pour SSO, mais requis par le schéma BDD)
+- **isadmin** – `false` par défaut
+- **account_locked** – `false` par défaut
+
+```js
+// Exemple de normalisation et unicité
+function normalizeUsername(rawEmail) {
+	const localPart = rawEmail.includes('@') ? rawEmail.split('@')[0] : rawEmail;
+	return localPart.toLowerCase().replace(/\./g, '-').replace(/[^a-z0-9_-]/g, '');
+	// "john.doe@example.com" => "john-doe"
+	// "JohnDoe" => "johndoe"
+}
+
+async function makeUniqueUsername(baseUsername) {
+	// Ajoute un suffixe numérique si le username existe déjà.
+	// "john-doe" => "john-doe_1" => "john-doe_2" etc.
+}
+```
+
+### Installation et déploiement
+
+1. **Installer les dépendances:**
+   ```bash
+   cd app
+   npm install
+   ```
+
+2. **Configurer le `.env` (racine du projet) :**
+   ```env
+   API_KEY=your_bridge_token_here
+   SSO_PORTAL=https://your-sso-portal.example.com/auth/
+   APP_URL=https://your-domain.com:8443
+   ```
+
+3. **Démarrer le serveur:**
+   ```bash
+   npm start
+   # Serveur HTTPS sur https://localhost:8443
+   ```
+
+4. **Tester les endpoints:**
+   ```bash
+   # Vérifier la configuration SSO
+   curl https://localhost:8443/api/auth/sso/status
+   
+   # Lancer une authentification SSO
+   curl -L https://localhost:8443/api/auth/sso/login
+   ```
+
+### Coexistence JWT local + SSO
+
+L'application supporte **deux chemins d'authentification parallèles**:
+
+| Chemin | Endpoints | Notes |
+|---|---|---|
+| **JWT Local** | `POST /api/auth/login`, `POST /api/auth/register` | Username/password stockés localement |
+| **SSO Portal** | `GET /api/auth/sso/login`, `GET /api/auth/sso/callback` | OAuth via portail centralisé |
+
+Le choix est laissé à l'utilisateur sur l'écran de login. Les deux chemins aboutissent à l'émission d'un **même JWT local**, facilitant les requêtes vers l'API.
+
 ## Résumé des points (état actuel)
 
 Le bilan actuel est de 8 activités obligatoires valides sur 8, 3 activités faciles valides sur 6, 1 activité moyenne valide sur 6 et 1 activité difficile valide sur 5. En comptant seulement les tâches marquées FAIT, le total actuel estimé est de 19 points.
+

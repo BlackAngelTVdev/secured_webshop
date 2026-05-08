@@ -5,6 +5,7 @@ const path = require("path");
 const https = require("https");
 const http = require("http");
 const fs = require("fs");
+const session = require('express-session');
 const { sendError } = require('./utils/apiResponse');
 
 const app = express();
@@ -43,6 +44,19 @@ app.use((req, res, next) => {
     }
 });
 
+// Session middleware (pour SSO Bridge correlation IDs)
+app.use(session({
+    secret: process.env.JWT_SECRET || 'dev-session-secret-change-me',
+    resave: true,  // Force save on every request
+    saveUninitialized: true,  // Save even uninitialized sessions
+    cookie: { 
+        secure: true,  // HTTPS only
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000,  // 24 heures
+        sameSite: 'strict'  // CSRF protection
+    }
+}));
+
 // Fichiers statiques (CSS, images, uploads...)
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -54,12 +68,14 @@ const profileRoute = require("./routes/Profile");
 const adminRoute   = require("./routes/Admin");
 const productsRoute = require("./routes/Products");
 const twoFactorRoute = require("./routes/TwoFactor");
+const ssoRoute = require("./routes/Sso");
 
 app.use("/api/auth",    authRoute);
 app.use("/api/profile", profileRoute);
 app.use("/api/admin",   adminRoute);
 app.use("/api/products", productsRoute);
 app.use("/api/2fa", twoFactorRoute);
+app.use("/sso", ssoRoute);  // Direct SSO endpoints
 
 // ---------------------------------------------------------------
 // Routes pages (retournent du HTML)

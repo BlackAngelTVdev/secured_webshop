@@ -10,11 +10,13 @@
     "bcryptjs": "^3.0.3",
     "dotenv": "^16.4.5",
     "express": "^4.19.1",
+    "express-session": "^1.17.3",
     "jsonwebtoken": "^9.0.3",
     "multer": "^1.4.5-lts.1",
     "mysql2": "^3.9.4",
     "nodemon": "^3.1.0",
     "qrcode": "^1.5.4",
-    "speakeasy": "^2.0.0"
+    "speakeasy": "^2.0.0",
+    "sso-bridge": "github:ETML-INF/SSO-Bridge"
   }
 }
