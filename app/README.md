@@ -1,4 +1,8 @@
 # secured_webshop - suivi détaillé des activités de sécurité
+|Nom|Prénom|Classe|Date|
+|---|---|---|---|
+|Rochat|Damien|CID2B|2026|
+
 
 Ce document explique les changements réalisés pour chaque activité déjà implémentée dans le projet.
 
@@ -531,3 +535,5 @@ Le choix est laissé à l'utilisateur sur l'écran de login. Les deux chemins ab
 
 Le bilan actuel est de 8 activités obligatoires valides sur 8, 3 activités faciles valides sur 6, 1 activité moyenne valide sur 6 et 1 activité difficile valide sur 5. En comptant seulement les tâches marquées FAIT, le total actuel estimé est de 19 points.
 
+## Conclusion
+Le travail réalisé montre un engagement sérieux et une progression tangible : les fonctionnalités principales ont été implémentées, les problèmes identifiés ont été traités et des choix techniques cohérents ont été documentés. J’ai abordé le projet avec rigueur et méthode, en privilégiant la qualité du code, la sécurité et la maintenabilité. Face aux difficultés, j’ai fait preuve d’adaptabilité et d’une volonté d’apprendre, en recherchant des solutions et en demandant de l’aide quand nécessaire. Pour la suite, je propose de consolider les tests, d’améliorer la couverture et d’optimiser les points de sécurité détectés afin d’assurer la robustesse et l’évolutivité du projet.
